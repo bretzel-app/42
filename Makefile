@@ -1,7 +1,8 @@
 .PHONY: help dev build preview check test test-unit test-e2e \
 	test-unit-coverage test-e2e-coverage lint \
 	db-push db-generate db-migrate db-studio \
-	install docker-build docker-up docker-down docker-logs clean
+	install docker-build docker-up docker-down docker-logs clean \
+	release release-patch release-minor release-major
 
 help: ## List all targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -66,3 +67,15 @@ docker-logs: ## Tail container logs
 clean: ## Remove build artifacts and test DBs
 	rm -rf build .svelte-kit node_modules/.vite
 	rm -f data/test-42.db
+
+release: ## Auto-bump from commits and release
+	bash scripts/release.sh
+
+release-patch: ## Patch bump and release
+	bash scripts/release.sh patch
+
+release-minor: ## Minor bump and release
+	bash scripts/release.sh minor
+
+release-major: ## Major bump and release
+	bash scripts/release.sh major

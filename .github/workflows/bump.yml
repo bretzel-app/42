@@ -1,0 +1,122 @@
+name: Bump & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Override bump type (leave empty to auto-detect)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - patch
+          - minor
+          - major
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.release-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run release script
+        env:
+          BUMP_TYPE: ${{ github.event.inputs.bump }}
+        run: bash scripts/release.sh "$BUMP_TYPE"
+
+      - name: Output new tag
+        id: release-tag
+        run: echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+  ci:
+    needs: bump
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [bump, ci]
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bump.outputs.tag }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.bump.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.bump.outputs.tag }}
+            type=raw,value=latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.bump.outputs.tag }}
+          generate_release_notes: true
+
+  pin-docker-compose:
+    name: Pin docker-compose to released version
+    runs-on: ubuntu-latest
+    needs: [bump, release]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update docker-compose.yml
+        env:
+          TAG: ${{ needs.bump.outputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          sed -i "s|image: ghcr.io/bretzel-app/42:.*|image: ghcr.io/bretzel-app/42:${VERSION}|" docker-compose.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docker-compose.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: pin docker-compose to ${TAG} [skip ci]"
+          git push origin main
