@@ -10,7 +10,7 @@ export const tripsLoaded = writable(false);
 export const activeTrips = derived(trips, ($trips) =>
 	$trips
 		.filter((t) => !t.deleted)
-		.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+		.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
 );
 
 export async function loadTrips() {
