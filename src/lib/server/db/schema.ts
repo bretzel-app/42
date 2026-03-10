@@ -108,6 +108,18 @@ export const syncLog = sqliteTable(
 	(table) => [index('sync_log_timestamp_idx').on(table.timestamp)]
 );
 
+export const apiKeys = sqliteTable('api_keys', {
+	id: text('id').primaryKey(),
+	userId: integer('user_id')
+		.references(() => users.id)
+		.notNull(),
+	name: text('name').notNull(),
+	keyHash: text('key_hash').notNull(),
+	keyPrefix: text('key_prefix').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	lastUsedAt: integer('last_used_at', { mode: 'timestamp' })
+});
+
 export const loginAttempts = sqliteTable(
 	'login_attempts',
 	{

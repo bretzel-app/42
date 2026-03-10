@@ -92,6 +92,16 @@ sqlite.exec(`
 		client_id TEXT NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS api_keys (
+		id TEXT PRIMARY KEY,
+		user_id INTEGER NOT NULL REFERENCES users(id),
+		name TEXT NOT NULL,
+		key_hash TEXT NOT NULL,
+		key_prefix TEXT NOT NULL,
+		created_at INTEGER NOT NULL,
+		last_used_at INTEGER
+	);
+
 	CREATE TABLE IF NOT EXISTS login_attempts (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		ip TEXT NOT NULL,

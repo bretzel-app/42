@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { User, ShieldCheck, SlidersHorizontal, Info } from 'lucide-svelte';
+	import { User, ShieldCheck, SlidersHorizontal, Info, Key } from 'lucide-svelte';
 
 	let { data, children } = $props();
 	let pathname = $derived(page.url.pathname);
@@ -33,6 +33,15 @@
 					>
 						<User size={16} />
 						Profile
+					</a>
+				</li>
+				<li>
+					<a
+						href="/settings/api-keys"
+						class="flex items-center gap-2 rounded-sm px-3 py-2 text-sm whitespace-nowrap transition-colors {pathname === '/settings/api-keys' ? 'bg-[var(--primary)]/15 text-[var(--primary)] font-medium' : 'text-[var(--text)] hover:bg-[var(--bg-base)]'}"
+					>
+						<Key size={16} />
+						API Keys
 					</a>
 				</li>
 				{#if data.user?.role === 'admin'}
