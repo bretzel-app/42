@@ -29,6 +29,8 @@
 
 	// Dashboard calculations — split pre-trip (fixed costs) from on-trip (daily spend)
 	const tripStart = $derived(trip ? new Date(trip.startDate).getTime() : 0);
+	const tripEnd = $derived(trip ? new Date(trip.endDate).getTime() : 0);
+	const now = $derived(Date.now());
 
 	const preTripCents = $derived(
 		$activeExpenses
@@ -50,6 +52,35 @@
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
 	const projectedTotal = $derived(preTripCents + (duration > 0 ? avgPerDay * duration : onTripCents));
 
+	// Days remaining (0 if trip is over, full duration if not started)
+	const daysRemaining = $derived(() => {
+		if (!trip) return 0;
+		const end = new Date(trip.endDate);
+		const today = new Date();
+		if (today > end) return 0;
+		const start = new Date(trip.startDate);
+		const from = today > start ? today : start;
+		const diffMs = end.getTime() - from.getTime();
+		return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+	});
+
+	// Trip status
+	const tripStatus = $derived(() => {
+		if (!trip) return 'unknown';
+		if (now < tripStart) return 'upcoming';
+		if (now > tripEnd) return 'completed';
+		return 'ongoing';
+	});
+
+	// Budget remaining per day
+	const budgetRemainingPerDay = $derived(() => {
+		if (!trip?.totalBudget) return null;
+		const remaining = trip.totalBudget - totalSpentCents;
+		const days = daysRemaining();
+		if (days <= 0) return null;
+		return Math.max(0, Math.round(remaining / days));
+	});
+
 	const budgetPercent = $derived(
 		trip?.totalBudget ? Math.min(100, (totalSpentCents / trip.totalBudget) * 100) : 0
 	);
@@ -57,15 +88,32 @@
 		budgetPercent > 90 ? 'var(--destructive)' : budgetPercent > 70 ? 'var(--primary)' : 'var(--success-text)'
 	);
 
-	// Category breakdown
+	// Category breakdown with per-day averages
 	const categoryTotals = $derived(() => {
 		const totals = new Map<CategoryId, number>();
 		for (const expense of $activeExpenses) {
 			const home = convertToHomeCurrency(expense.amount, expense.exchangeRate);
 			totals.set(expense.categoryId, (totals.get(expense.categoryId) || 0) + home);
 		}
+
+		// Count unique on-trip days per category for daily averages
+		const onTripDaysPerCat = new Map<CategoryId, Set<string>>();
+		for (const expense of $activeExpenses) {
+			const expDate = new Date(expense.date).getTime();
+			if (expDate >= tripStart) {
+				if (!onTripDaysPerCat.has(expense.categoryId)) {
+					onTripDaysPerCat.set(expense.categoryId, new Set());
+				}
+				onTripDaysPerCat.get(expense.categoryId)!.add(new Date(expense.date).toDateString());
+			}
+		}
+
 		return CATEGORIES
-			.map((cat) => ({ ...cat, total: totals.get(cat.id) || 0 }))
+			.map((cat) => {
+				const total = totals.get(cat.id) || 0;
+				const avgPerDay = elapsed > 0 ? total / elapsed : 0;
+				return { ...cat, total, avgPerDay };
+			})
 			.filter((c) => c.total > 0)
 			.sort((a, b) => b.total - a.total);
 	});
@@ -86,7 +134,16 @@
 				{#if trip.destination}
 					<p class="text-sm text-[var(--text-muted)]">{trip.destination}</p>
 				{/if}
-				<p class="text-xs text-[var(--text-muted)]">{formatDateRange(trip.startDate, trip.endDate)} · {duration} days · {trip.numberOfPeople} {trip.numberOfPeople === 1 ? 'person' : 'people'}</p>
+				<p class="text-xs text-[var(--text-muted)]">
+					{formatDateRange(trip.startDate, trip.endDate)} · {duration} days · {trip.numberOfPeople} {trip.numberOfPeople === 1 ? 'person' : 'people'}
+					{#if tripStatus() === 'upcoming'}
+						<span class="ml-1 text-[var(--primary)]">· Starts in {daysRemaining()} days</span>
+					{:else if tripStatus() === 'ongoing' && daysRemaining() > 0}
+						<span class="ml-1 text-[var(--primary)]">· {daysRemaining()} days left</span>
+					{:else if tripStatus() === 'completed'}
+						<span class="ml-1">· Completed</span>
+					{/if}
+				</p>
 			</div>
 			<div class="flex gap-2">
 				<a
@@ -121,7 +178,12 @@
 						style="width: {budgetPercent}%; background-color: {budgetColor}"
 					></div>
 				</div>
-				<p class="mt-1 text-xs text-[var(--text-muted)]">{formatNumber(budgetPercent, 0)}% used</p>
+				<div class="mt-1 flex items-center justify-between text-xs text-[var(--text-muted)]">
+					<span>{formatNumber(budgetPercent, 0)}% used</span>
+					{#if budgetRemainingPerDay() !== null}
+						<span>{formatCents(budgetRemainingPerDay()!, trip.homeCurrency)}/day remaining</span>
+					{/if}
+				</div>
 			</div>
 		{/if}
 
@@ -176,6 +238,14 @@
 								<rect x="0" y="0" width="100" height="6" rx="1" fill="var(--border-subtle)" />
 								<rect x="0" y="0" width={pct} height="6" rx="1" fill={cat.color} />
 							</svg>
+							{#if cat.avgPerDay > 0}
+								<p class="mt-0.5 text-xs text-[var(--text-muted)]">
+									{formatCents(Math.round(cat.avgPerDay), trip.homeCurrency)}/day
+									{#if cat.id === 'accommodation'}
+										(per night)
+									{/if}
+								</p>
+							{/if}
 						</div>
 					{/each}
 				</div>
