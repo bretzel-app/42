@@ -27,16 +27,28 @@
 		loading = false;
 	});
 
-	// Dashboard calculations
-	const totalSpentCents = $derived(
-		$activeExpenses.reduce((sum, e) => sum + convertToHomeCurrency(e.amount, e.exchangeRate), 0)
+	// Dashboard calculations — split pre-trip (fixed costs) from on-trip (daily spend)
+	const tripStart = $derived(trip ? new Date(trip.startDate).getTime() : 0);
+
+	const preTripCents = $derived(
+		$activeExpenses
+			.filter((e) => new Date(e.date).getTime() < tripStart)
+			.reduce((sum, e) => sum + convertToHomeCurrency(e.amount, e.exchangeRate), 0)
 	);
+
+	const onTripCents = $derived(
+		$activeExpenses
+			.filter((e) => new Date(e.date).getTime() >= tripStart)
+			.reduce((sum, e) => sum + convertToHomeCurrency(e.amount, e.exchangeRate), 0)
+	);
+
+	const totalSpentCents = $derived(preTripCents + onTripCents);
 
 	const duration = $derived(trip ? tripDurationDays(trip.startDate, trip.endDate) : 1);
 	const elapsed = $derived(trip ? elapsedDays(trip.startDate, trip.endDate) : 1);
-	const avgPerDay = $derived(elapsed > 0 ? totalSpentCents / elapsed : 0);
+	const avgPerDay = $derived(elapsed > 0 ? onTripCents / elapsed : 0);
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
-	const projectedTotal = $derived(duration > 0 ? avgPerDay * duration : totalSpentCents);
+	const projectedTotal = $derived(preTripCents + (duration > 0 ? avgPerDay * duration : onTripCents));
 
 	const budgetPercent = $derived(
 		trip?.totalBudget ? Math.min(100, (totalSpentCents / trip.totalBudget) * 100) : 0
@@ -118,10 +130,16 @@
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
 				<p class="text-xs text-[var(--text-muted)]">Total spent</p>
 				<p class="mt-1 text-lg font-bold text-[var(--text)]">{formatCents(totalSpentCents, trip.homeCurrency)}</p>
+				{#if preTripCents > 0}
+					<p class="mt-0.5 text-xs text-[var(--text-muted)]">Pre-trip: {formatCents(preTripCents, trip.homeCurrency)}</p>
+				{/if}
 			</div>
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
 				<p class="text-xs text-[var(--text-muted)]">Avg / day</p>
 				<p class="mt-1 text-lg font-bold text-[var(--text)]">{formatCents(Math.round(avgPerDay), trip.homeCurrency)}</p>
+				{#if preTripCents > 0}
+					<p class="mt-0.5 text-xs text-[var(--text-muted)]">On-trip only</p>
+				{/if}
 			</div>
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
 				<p class="text-xs text-[var(--text-muted)]">Avg / person</p>
@@ -130,6 +148,9 @@
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
 				<p class="text-xs text-[var(--text-muted)]">Projected total</p>
 				<p class="mt-1 text-lg font-bold text-[var(--text)]">{formatCents(Math.round(projectedTotal), trip.homeCurrency)}</p>
+				{#if preTripCents > 0}
+					<p class="mt-0.5 text-xs text-[var(--text-muted)]">Incl. {formatCents(preTripCents, trip.homeCurrency)} fixed</p>
+				{/if}
 			</div>
 		</div>
 
