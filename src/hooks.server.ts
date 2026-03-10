@@ -1,6 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
 import { validateSession, isSetupComplete } from '$lib/server/auth.js';
+import { validateApiKey, getUserForApiKey } from '$lib/server/api-keys.js';
 
 const PUBLIC_PATHS = [
 	'/login',
@@ -18,6 +19,33 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Allow public paths
 	if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
 		return resolve(event);
+	}
+
+	// API routes: authenticate via Bearer token if present
+	if (pathname.startsWith('/api/')) {
+		const authHeader = event.request.headers.get('authorization');
+		const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+		if (token) {
+			const { valid, userId } = validateApiKey(token);
+			if (!valid || !userId) {
+				return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+					status: 401,
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+
+			const user = getUserForApiKey(userId);
+			if (!user) {
+				return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+					status: 401,
+					headers: { 'Content-Type': 'application/json' }
+				});
+			}
+
+			event.locals.user = user;
+			return resolve(event);
+		}
 	}
 
 	// Check if setup is complete
