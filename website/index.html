@@ -34,6 +34,7 @@
 			<nav>
 				<ul class="nav-links">
 					<li><a href="#features">Features</a></li>
+					<li><a href="#screenshots">Screenshots</a></li>
 					<li><a href="#deploy">Deploy</a></li>
 					<li>
 						<a href="https://github.com/bretzel-app/42" class="github-link" target="_blank" rel="noopener">
@@ -73,7 +74,7 @@
 					</a>
 				</div>
 				<div class="hero-screenshot animate-in delay-3">
-					<div class="screenshot-placeholder"></div>
+					<img src="assets/screenshot-dashboard.png" alt="42 trip dashboard showing budget gauge, spending stats, and category breakdown" width="1280" height="800" loading="eager">
 				</div>
 			</div>
 		</section>
@@ -163,6 +164,43 @@
 					</div>
 					<h3>Open Source</h3>
 					<p>MIT licensed. Fork it, customize it, contribute back. Built with SvelteKit, SQLite, and Drizzle ORM.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ── Screenshots ── -->
+	<section class="screenshots" id="screenshots">
+		<div class="container">
+			<h2 class="animate-in">See it in action</h2>
+			<h3 class="screenshots-subtitle animate-in">Desktop</h3>
+			<div class="screenshots-grid">
+				<div class="screenshot-card animate-in delay-1">
+					<img src="assets/screenshot-trips.png" alt="Trip list showing Paris, Tokyo, and Portugal trips with budgets" width="1280" height="800" loading="lazy">
+					<div class="screenshot-label">Trip list</div>
+				</div>
+				<div class="screenshot-card animate-in delay-2">
+					<img src="assets/screenshot-dashboard.png" alt="Trip dashboard with budget gauge, stats grid, and category breakdown" width="1280" height="800" loading="lazy">
+					<div class="screenshot-label">Trip dashboard</div>
+				</div>
+				<div class="screenshot-card animate-in delay-3">
+					<img src="assets/screenshot-expenses.png" alt="Expense list grouped by date with daily totals" width="1280" height="800" loading="lazy">
+					<div class="screenshot-label">Expense list</div>
+				</div>
+			</div>
+			<h3 class="screenshots-subtitle animate-in">Mobile</h3>
+			<div class="screenshots-grid screenshots-grid-mobile">
+				<div class="screenshot-card screenshot-card-mobile animate-in delay-1">
+					<img src="assets/screenshot-mobile-trips.png" alt="Mobile trip list view" width="390" height="844" loading="lazy">
+					<div class="screenshot-label">Trips</div>
+				</div>
+				<div class="screenshot-card screenshot-card-mobile animate-in delay-2">
+					<img src="assets/screenshot-mobile-dashboard.png" alt="Mobile dashboard with budget and categories" width="390" height="844" loading="lazy">
+					<div class="screenshot-label">Dashboard</div>
+				</div>
+				<div class="screenshot-card screenshot-card-mobile animate-in delay-3">
+					<img src="assets/screenshot-mobile-expenses.png" alt="Mobile expense list" width="390" height="844" loading="lazy">
+					<div class="screenshot-label">Expenses</div>
 				</div>
 			</div>
 		</div>
@@ -289,7 +327,7 @@ volumes:
 		}, { threshold: 0.1 });
 
 		// Only observe elements that aren't in the hero (hero animates on load)
-		document.querySelectorAll('.features .animate-in, .deploy .animate-in').forEach(el => {
+		document.querySelectorAll('.features .animate-in, .screenshots .animate-in, .deploy .animate-in').forEach(el => {
 			el.style.opacity = '0';
 			el.classList.remove('animate-in');
 			observer.observe(el);

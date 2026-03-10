@@ -393,6 +393,58 @@ section {
 	line-height: 1.5;
 }
 
+/* ── Screenshots ── */
+.screenshots h2 {
+	text-align: center;
+	font-size: clamp(0.9rem, 2.5vw, 1.25rem);
+	margin-bottom: 2rem;
+}
+
+.screenshots-subtitle {
+	text-align: center;
+	font-size: 0.7rem;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	margin-bottom: 1.5rem;
+}
+
+.screenshots-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+	gap: 1.5rem;
+	margin-bottom: 3rem;
+}
+
+.screenshots-grid-mobile {
+	grid-template-columns: repeat(3, 1fr);
+	max-width: 48rem;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.screenshot-card-mobile {
+	max-width: 14rem;
+	justify-self: center;
+}
+
+.screenshot-card {
+	border: 2px solid var(--border-subtle);
+	border-radius: 2px;
+	box-shadow: var(--card-shadow);
+	overflow: hidden;
+	background: var(--bg-surface);
+}
+
+.screenshot-label {
+	padding: 0.75rem 1rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--text-muted);
+	border-top: 2px solid var(--border-subtle);
+	text-align: center;
+}
+
 /* ── Deploy / Quick Start ── */
 .deploy {
 	background: var(--bg-surface);
@@ -624,6 +676,18 @@ section {
 
 	.features-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.screenshots-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.screenshots-grid-mobile {
+		grid-template-columns: repeat(3, 1fr);
+	}
+
+	.screenshot-card-mobile {
+		max-width: none;
 	}
 }
 
