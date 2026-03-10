@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>42 - Your trips. Your budget. Your rules.</title>
+	<meta name="description" content="42 is a self-hostable, offline-first holiday budget tracking app. Track expenses in multiple currencies, view real-time analytics, and stay within budget.">
+	<meta property="og:title" content="42 by Bretzel">
+	<meta property="og:description" content="A self-hostable, offline-first holiday budget tracking app that respects your privacy.">
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://42.bretzel.app">
+	<meta property="og:image" content="https://42.bretzel.app/assets/apple-touch-icon.png">
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="42 by Bretzel">
+	<meta name="twitter:description" content="A self-hostable, offline-first holiday budget tracking app that respects your privacy.">
+	<meta name="twitter:image" content="https://42.bretzel.app/assets/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96x96.png">
+	<link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+	<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+	<!-- ── Header ── -->
+	<header class="site-header">
+		<div class="container">
+			<a href="/" class="logo">
+				<img src="assets/favicon-96x96.png" alt="42 logo" width="32" height="32">
+				<span>42</span>
+			</a>
+			<button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+			</button>
+			<nav>
+				<ul class="nav-links">
+					<li><a href="#features">Features</a></li>
+					<li><a href="#deploy">Deploy</a></li>
+					<li>
+						<a href="https://github.com/bretzel-app/42" class="github-link" target="_blank" rel="noopener">
+							<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+							GitHub
+						</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</header>
+
+	<!-- ── Hero ── -->
+	<div class="hero-wrapper">
+		<!-- Decorative floating cards -->
+		<div class="deco-card deco-card-1">Paris 2025<br>EUR 1,200</div>
+		<div class="deco-card deco-card-2">Tokyo trip<br>JPY 150,000</div>
+		<div class="deco-card deco-card-3">Beach weekend<br>USD 450</div>
+		<div class="deco-card deco-card-4">Road trip<br>GBP 800</div>
+
+		<section class="hero">
+			<div class="container">
+				<h1 class="animate-in">
+					Your trips. Your budget.<br><span>Your rules.</span>
+				</h1>
+				<p class="hero-subtitle animate-in delay-1">
+					A self-hostable, offline-first holiday budget tracker that respects your privacy.
+				</p>
+				<div class="hero-buttons animate-in delay-2">
+					<a href="#deploy" class="btn btn-primary">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+						Get Started
+					</a>
+					<a href="https://github.com/bretzel-app/42" class="btn btn-secondary" target="_blank" rel="noopener">
+						<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+						View on GitHub
+					</a>
+				</div>
+				<div class="hero-screenshot animate-in delay-3">
+					<div class="screenshot-placeholder"></div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<!-- ── Features ── -->
+	<section class="features" id="features">
+		<div class="container">
+			<h2 class="animate-in">Everything you need,<br>nothing you don't</h2>
+			<div class="features-grid">
+				<!-- Multi-Currency -->
+				<div class="feature-card animate-in delay-1">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+					</div>
+					<h3>Multi-Currency</h3>
+					<p>Track expenses in any currency. Set exchange rates per trip and see everything converted to your home currency.</p>
+				</div>
+
+				<!-- Offline-first PWA -->
+				<div class="feature-card animate-in delay-2">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+					</div>
+					<h3>Offline-First</h3>
+					<p>Works without internet. PWA with CRDT-based sync means your expenses are always available, even mid-flight.</p>
+				</div>
+
+				<!-- Self-hostable -->
+				<div class="feature-card animate-in delay-3">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+					</div>
+					<h3>Self-Hostable</h3>
+					<p>One Docker command. Your data stays on your server. No cloud, no tracking, no nonsense.</p>
+				</div>
+
+				<!-- Dashboard & Charts -->
+				<div class="feature-card animate-in delay-4">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+					</div>
+					<h3>Live Dashboard</h3>
+					<p>Real-time analytics with budget gauge, category breakdown, daily spending timeline, and projected totals.</p>
+				</div>
+
+				<!-- Categories -->
+				<div class="feature-card animate-in delay-5">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+					</div>
+					<h3>Smart Categories</h3>
+					<p>Six built-in categories: food, accommodation, transport, activities, shopping, and misc. Quick one-tap expense entry.</p>
+				</div>
+
+				<!-- Budget Tracking -->
+				<div class="feature-card animate-in delay-6">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+					</div>
+					<h3>Budget Tracking</h3>
+					<p>Set a budget per trip. See at a glance if you're on track, with average per day and per person breakdowns.</p>
+				</div>
+
+				<!-- Multi-User -->
+				<div class="feature-card animate-in delay-1">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+					</div>
+					<h3>Multi-User</h3>
+					<p>Share one instance with travel companions or family. Admin manages accounts, each user tracks their own trips.</p>
+				</div>
+
+				<!-- Quick Entry -->
+				<div class="feature-card animate-in delay-2">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+					</div>
+					<h3>Quick Entry</h3>
+					<p>Add expenses in seconds. Large amount input, one-tap categories, auto-filled dates. Designed for on-the-go use.</p>
+				</div>
+
+				<!-- Open Source -->
+				<div class="feature-card animate-in delay-3">
+					<div class="feature-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+					</div>
+					<h3>Open Source</h3>
+					<p>MIT licensed. Fork it, customize it, contribute back. Built with SvelteKit, SQLite, and Drizzle ORM.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ── Deploy ── -->
+	<section class="deploy" id="deploy">
+		<div class="container">
+			<h2 class="animate-in">Deploy in seconds</h2>
+			<p class="deploy-subtitle animate-in delay-1">One file. One command. Done.</p>
+
+			<div class="code-block animate-in delay-2">
+				<div class="code-header">
+					<span>docker-compose.yml</span>
+					<button class="copy-btn" onclick="copyCode()">copy</button>
+				</div>
+				<pre><code><span class="code-key">services</span>:
+  <span class="code-key">42</span>:
+    <span class="code-key">image</span>: <span class="code-string">ghcr.io/bretzel-app/42:latest</span>
+    <span class="code-key">ports</span>:
+      - <span class="code-string">"3000:3000"</span>
+    <span class="code-key">volumes</span>:
+      - <span class="code-string">42_data:/data</span>
+
+<span class="code-key">volumes</span>:
+  <span class="code-key">42_data</span>:</code></pre>
+			</div>
+
+			<div class="deploy-thats-it animate-in delay-3">
+				<p class="font-pixel">That's it.</p>
+				<p>Open <code>localhost:3000</code>, set a password, and start tracking.</p>
+			</div>
+
+			<div class="deploy-cta animate-in delay-4">
+				<a href="https://github.com/bretzel-app/42" class="btn btn-secondary" target="_blank" rel="noopener">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+					View on GitHub
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- ── Footer ── -->
+	<footer class="site-footer">
+		<div class="container">
+			<p class="footer-brand font-pixel">Part of the Bretzel app universe</p>
+			<ul class="footer-links">
+				<li><a href="https://github.com/bretzel-app/42" target="_blank" rel="noopener">GitHub</a></li>
+				<li><a href="https://github.com/bretzel-app/42/blob/main/LICENSE" target="_blank" rel="noopener">License</a></li>
+			</ul>
+			<span class="footer-version">v0.1.0</span>
+		</div>
+	</footer>
+
+	<!-- Lightbox -->
+	<div class="lightbox" id="lightbox" role="dialog" aria-label="Image preview">
+		<img src="" alt="">
+	</div>
+
+	<script>
+		// Lightbox
+		const lightbox = document.getElementById('lightbox');
+		const lightboxImg = lightbox.querySelector('img');
+
+		document.querySelectorAll('.screenshot-card img, .hero-screenshot img').forEach(img => {
+			img.addEventListener('click', () => {
+				lightboxImg.src = img.src;
+				lightboxImg.alt = img.alt;
+				lightbox.classList.add('active');
+			});
+		});
+
+		lightbox.addEventListener('click', () => {
+			lightbox.classList.remove('active');
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') lightbox.classList.remove('active');
+		});
+
+		// Mobile nav toggle
+		const toggle = document.querySelector('.nav-toggle');
+		const navLinks = document.querySelector('.nav-links');
+		toggle.addEventListener('click', () => {
+			const open = navLinks.classList.toggle('open');
+			toggle.setAttribute('aria-expanded', open);
+		});
+
+		// Close nav on link click (mobile)
+		navLinks.querySelectorAll('a').forEach(link => {
+			link.addEventListener('click', () => {
+				navLinks.classList.remove('open');
+				toggle.setAttribute('aria-expanded', 'false');
+			});
+		});
+
+		// Copy docker-compose snippet
+		function copyCode() {
+			const code = `services:
+  42:
+    image: ghcr.io/bretzel-app/42:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - 42_data:/data
+
+volumes:
+  42_data:`;
+			navigator.clipboard.writeText(code).then(() => {
+				const btn = document.querySelector('.copy-btn');
+				btn.textContent = 'copied!';
+				setTimeout(() => { btn.textContent = 'copy'; }, 2000);
+			});
+		}
+
+		// Intersection Observer for scroll animations
+		const observer = new IntersectionObserver((entries) => {
+			entries.forEach(entry => {
+				if (entry.isIntersecting) {
+					entry.target.classList.add('animate-in');
+					observer.unobserve(entry.target);
+				}
+			});
+		}, { threshold: 0.1 });
+
+		// Only observe elements that aren't in the hero (hero animates on load)
+		document.querySelectorAll('.features .animate-in, .deploy .animate-in').forEach(el => {
+			el.style.opacity = '0';
+			el.classList.remove('animate-in');
+			observer.observe(el);
+		});
+	</script>
+</body>
+</html>
