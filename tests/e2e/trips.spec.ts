@@ -27,6 +27,7 @@ test.describe('Trip management', () => {
 
 		// When the user edits the trip name
 		await page.getByTestId('edit-trip-btn').click();
+		await page.waitForURL(/\/edit/);
 		await page.getByTestId('trip-name-input').fill('Rome Summer 2025');
 		await page.getByTestId('trip-save-btn').click();
 
@@ -40,6 +41,8 @@ test.describe('Trip management', () => {
 
 		// When the user deletes the trip
 		await page.getByTestId('edit-trip-btn').click();
+		await page.waitForURL(/\/edit/);
+		await page.getByText('Delete trip').click();
 		await page.getByTestId('confirm-delete-btn').click();
 
 		// Then the trip list no longer contains it

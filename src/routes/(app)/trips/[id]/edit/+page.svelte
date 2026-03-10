@@ -88,7 +88,7 @@
 
 			<div>
 				<label for="name" class="mb-1 block text-sm font-medium text-[var(--text)]">Trip name *</label>
-				<input id="name" type="text" bind:value={name} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" required />
+				<input id="name" type="text" bind:value={name} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" required data-testid="trip-name-input" />
 			</div>
 
 			<div>
@@ -137,7 +137,7 @@
 				</button>
 				<div class="flex gap-3">
 					<a href="/trips/{tripId}" class="rounded-sm border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text)] hover:border-[var(--primary)]">Cancel</a>
-					<button type="submit" disabled={saving} class="rounded-sm bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+					<button type="submit" disabled={saving} class="rounded-sm bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50" data-testid="trip-save-btn">
 						{saving ? 'Saving...' : 'Save'}
 					</button>
 				</div>
