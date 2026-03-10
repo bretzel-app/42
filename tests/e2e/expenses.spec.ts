@@ -22,7 +22,8 @@ test.describe('Expense management', () => {
 
 		// Then the dashboard shows the correct total spent
 		await page.goto(page.url().replace(/\/expenses.*/, ''));
-		await expect(page.getByText('300.00')).toBeVisible();
+		await expect(page.getByText('Spent:')).toBeVisible();
+		await expect(page.getByText('300.00').first()).toBeVisible();
 	});
 
 	test('Scenario: Expense list groups expenses by date', async ({ authenticatedPage: page }) => {
