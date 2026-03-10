@@ -1,0 +1,46 @@
+node_modules
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Database
+/data
+*.db
+*.db-journal
+*.db-wal
+
+# Test results
+/test-results
+/playwright-report
+
+# Coverage
+/coverage
+.nyc_output
+
+# Claude Code
+/.claude/
+
+# Local notes
+todo.md
+
+# Worktrees
+.worktrees/

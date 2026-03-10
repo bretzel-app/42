@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+@import 'tailwindcss';
+
+:root {
+	--bg-base: #f0e6d3;
+	--bg-surface: #faf5eb;
+	--primary: #C8860A;
+	--primary-hover: #E8A020;
+	--text: #1a1a2e;
+	--text-muted: #6b6272;
+	--border: #1a1a2e;
+	--border-subtle: #d4cabb;
+	--destructive: #a63d2f;
+	--error-bg: #f5e0db;
+	--error-border: #d4a69e;
+	--error-text: #8b2e1f;
+	--success-bg: #dce8d4;
+	--success-text: #3a5a2e;
+	--card-shadow: 2px 2px 0px var(--border-subtle);
+	--card-shadow-hover: 3px 3px 0px var(--primary);
+}
+
+body {
+	font-family: 'JetBrains Mono', monospace;
+	accent-color: var(--primary);
+}
+
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0.03;
+	background-image: repeating-conic-gradient(#1a1a2e 0% 25%, transparent 0% 50%);
+	background-size: 4px 4px;
+	z-index: 0;
+}
+
+/* Entrance animations */
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes pop-in {
+	from { opacity: 0; transform: scale(0.95) translateY(8px); }
+	to { opacity: 1; transform: scale(1) translateY(0); }
+}
