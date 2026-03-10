@@ -52,15 +52,25 @@
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
 	const projectedTotal = $derived(preTripCents + (duration > 0 ? avgPerDay * duration : onTripCents));
 
-	// Days remaining (0 if trip is over, full duration if not started)
+	// Days until trip starts (for upcoming) or days left (for ongoing)
+	const daysUntilStart = $derived(() => {
+		if (!trip) return 0;
+		const start = new Date(trip.startDate);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		start.setHours(0, 0, 0, 0);
+		const diffMs = start.getTime() - today.getTime();
+		return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+	});
+
 	const daysRemaining = $derived(() => {
 		if (!trip) return 0;
 		const end = new Date(trip.endDate);
 		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		end.setHours(0, 0, 0, 0);
 		if (today > end) return 0;
-		const start = new Date(trip.startDate);
-		const from = today > start ? today : start;
-		const diffMs = end.getTime() - from.getTime();
+		const diffMs = end.getTime() - today.getTime();
 		return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 	});
 
@@ -137,7 +147,7 @@
 				<p class="text-xs text-[var(--text-muted)]">
 					{formatDateRange(trip.startDate, trip.endDate)} · {duration} days · {trip.numberOfPeople} {trip.numberOfPeople === 1 ? 'person' : 'people'}
 					{#if tripStatus() === 'upcoming'}
-						<span class="ml-1 text-[var(--primary)]">· Starts in {daysRemaining()} days</span>
+						<span class="ml-1 text-[var(--primary)]">· Starts in {daysUntilStart()} {daysUntilStart() === 1 ? 'day' : 'days'}</span>
 					{:else if tripStatus() === 'ongoing' && daysRemaining() > 0}
 						<span class="ml-1 text-[var(--primary)]">· {daysRemaining()} days left</span>
 					{:else if tripStatus() === 'completed'}
