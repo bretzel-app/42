@@ -14,6 +14,8 @@ export const activeTrips = derived(trips, ($trips) =>
 );
 
 export async function loadTrips() {
+	tripsLoaded.set(false);
+
 	try {
 		// Load from IDB first for instant display
 		const idbTrips = await getAllTrips();
