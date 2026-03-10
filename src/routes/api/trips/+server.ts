@@ -1,11 +1,11 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { getUserId } from '$lib/server/api-utils.js';
-import { listTrips, createTrip } from '$lib/server/trips-service.js';
+import { listTripsWithTotals, createTrip } from '$lib/server/trips-service.js';
 
 export const GET: RequestHandler = async (event) => {
 	const userId = getUserId(event);
-	return json(listTrips(userId));
+	return json(listTripsWithTotals(userId));
 };
 
 export const POST: RequestHandler = async ({ request, ...event }) => {

@@ -5,6 +5,9 @@
 	import Plus from 'lucide-svelte/icons/plus';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
+	import Wallet from 'lucide-svelte/icons/wallet';
+
+	type TripWithTotals = (typeof $activeTrips)[0] & { totalSpent?: number; expenseCount?: number };
 </script>
 
 <svelte:head>
@@ -34,6 +37,9 @@
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each $activeTrips as trip (trip.id)}
+				{@const t = trip as TripWithTotals}
+				{@const spent = t.totalSpent ?? 0}
+				{@const budgetPct = t.totalBudget ? Math.min(100, (spent / t.totalBudget) * 100) : 0}
 				<a
 					href="/trips/{trip.id}"
 					class="group rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 shadow-[var(--card-shadow)] transition-all hover:border-[var(--primary)] hover:shadow-[var(--card-shadow-hover)]"
@@ -55,11 +61,19 @@
 
 					{#if trip.totalBudget}
 						<div class="mt-3 h-2 overflow-hidden rounded-sm bg-[var(--border-subtle)]">
-							<div class="h-full bg-[var(--primary)]" style="width: 0%"></div>
+							<div
+								class="h-full transition-all"
+								style="width: {budgetPct}%; background-color: {budgetPct > 90 ? 'var(--destructive)' : budgetPct > 70 ? 'var(--primary)' : 'var(--success-text)'}"
+							></div>
 						</div>
 						<p class="mt-1 text-xs text-[var(--text-muted)]">
-							Budget: {formatCents(trip.totalBudget, trip.homeCurrency)}
+							{formatCents(spent, trip.homeCurrency)} / {formatCents(trip.totalBudget, trip.homeCurrency)}
 						</p>
+					{:else if spent > 0}
+						<div class="mt-2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
+							<Wallet size={12} />
+							Spent: {formatCents(spent, trip.homeCurrency)}
+						</div>
 					{/if}
 				</a>
 			{/each}

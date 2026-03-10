@@ -1,6 +1,6 @@
 import { db } from './db/index.js';
 import { trips, expenses, tripCurrencies } from './db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { Trip } from '$lib/types/index.js';
 
@@ -28,6 +28,26 @@ export function listTrips(userId: number): Trip[] {
 		.where(and(eq(trips.userId, userId), eq(trips.deleted, false)))
 		.all()
 		.map(toTrip);
+}
+
+export function listTripsWithTotals(userId: number): (Trip & { totalSpent: number; expenseCount: number })[] {
+	const rows = db
+		.select({
+			trip: trips,
+			totalSpent: sql<number>`coalesce(sum(case when ${expenses.deleted} = 0 then ${expenses.amount} else 0 end), 0)`.as('total_spent'),
+			expenseCount: sql<number>`count(case when ${expenses.deleted} = 0 then 1 end)`.as('expense_count')
+		})
+		.from(trips)
+		.leftJoin(expenses, eq(trips.id, expenses.tripId))
+		.where(and(eq(trips.userId, userId), eq(trips.deleted, false)))
+		.groupBy(trips.id)
+		.all();
+
+	return rows.map((r) => ({
+		...toTrip(r.trip),
+		totalSpent: Number(r.totalSpent),
+		expenseCount: Number(r.expenseCount)
+	}));
 }
 
 export function getTrip(id: string, userId: number): Trip | null {
