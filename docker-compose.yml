@@ -1,0 +1,17 @@
+services:
+  42:
+    image: ghcr.io/bretzel-app/42:0.1.0
+    container_name: 42
+    ports:
+      - "3000:3000"
+    volumes:
+      - 42-data:/data
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/data
+      - DATABASE_URL=/data/42.db
+      - ORIGIN=${ORIGIN:-http://localhost:3000}
+    restart: unless-stopped
+
+volumes:
+  42-data:
