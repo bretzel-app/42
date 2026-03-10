@@ -1,6 +1,7 @@
 import { db } from './db/index.js';
 import { expenses, trips } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 import type { Expense } from '$lib/types/index.js';
 
 function toExpense(row: typeof expenses.$inferSelect): Expense {
@@ -46,7 +47,7 @@ export function createExpense(data: Expense, userId: number): Expense | null {
 	const result = db
 		.insert(expenses)
 		.values({
-			id: data.id,
+			id: data.id || randomUUID(),
 			tripId: data.tripId,
 			userId,
 			amount: data.amount,
