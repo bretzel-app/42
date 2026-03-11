@@ -7,20 +7,35 @@
 	import { formatNumber } from '$lib/utils/format.js';
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
-	import type { Trip, Expense, CategoryId } from '$lib/types/index.js';
+	import ShareDialog from '$lib/components/ShareDialog.svelte';
+	import type { Trip, Expense, CategoryId, Collaborator } from '$lib/types/index.js';
 	import Pencil from 'lucide-svelte/icons/pencil';
 	import Plus from 'lucide-svelte/icons/plus';
+	import Users from 'lucide-svelte/icons/users';
 
 	let trip = $state<Trip | null>(null);
 	let loading = $state(true);
+	let showShare = $state(false);
+	let collaborators = $state<Collaborator[]>([]);
+	let isOwner = $state(true);
+	let ownerName = $state('');
 
 	const tripId = $derived($page.params.id!);
 
 	onMount(async () => {
 		try {
-			const res = await fetch(`/api/trips/${tripId}`);
-			if (res.ok) {
-				trip = await res.json();
+			const [tripRes, collabRes] = await Promise.all([
+				fetch(`/api/trips/${tripId}`),
+				fetch(`/api/trips/${tripId}/collaborators`)
+			]);
+			if (tripRes.ok) {
+				const data = await tripRes.json();
+				trip = data;
+				isOwner = data.isOwner !== false;
+				ownerName = data.ownerName || '';
+			}
+			if (collabRes.ok) {
+				collaborators = await collabRes.json();
 			}
 		} catch { /* offline */ }
 		await loadExpenses(tripId);
@@ -156,6 +171,24 @@
 				</p>
 			</div>
 			<div class="flex gap-2">
+				{#if isOwner}
+					<button
+						onclick={() => (showShare = true)}
+						class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text)] hover:border-[var(--primary)]"
+						data-testid="share-trip-btn"
+					>
+						<Users size={14} />
+						Share
+						{#if collaborators.length > 0}
+							<span class="ml-1 text-xs text-[var(--text-muted)]">({collaborators.length})</span>
+						{/if}
+					</button>
+				{:else if collaborators.length > 0}
+					<span class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-muted)]">
+						<Users size={14} />
+						Shared · {collaborators.length + 1} members
+					</span>
+				{/if}
 				<a
 					href="/trips/{trip.id}/edit"
 					class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text)] hover:border-[var(--primary)]"
@@ -270,8 +303,30 @@
 			>
 				View all expenses ({$activeExpenses.length})
 			</a>
+			{#if !isOwner}
+				<button
+					onclick={async () => {
+						if (!confirm('Leave this shared trip?')) return;
+						const res = await fetch(`/api/trips/${tripId}/collaborators?userId=self`, { method: 'DELETE' });
+						if (res.ok) window.location.href = '/';
+					}}
+					class="rounded-sm border border-[var(--border-subtle)] px-4 py-2 text-sm text-[var(--destructive)] hover:border-[var(--destructive)]"
+				>
+					Leave trip
+				</button>
+			{/if}
 		</div>
 	</div>
+
+	{#if showShare && isOwner}
+		<ShareDialog
+			{tripId}
+			{collaborators}
+			{ownerName}
+			onClose={() => (showShare = false)}
+			onUpdate={(updated) => (collaborators = updated)}
+		/>
+	{/if}
 {:else}
 	<p class="text-sm text-[var(--text-muted)]">Trip not found</p>
 {/if}
