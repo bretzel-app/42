@@ -6,8 +6,9 @@
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Wallet from 'lucide-svelte/icons/wallet';
+	import Users from 'lucide-svelte/icons/users';
 
-	type TripWithTotals = (typeof $activeTrips)[0] & { totalSpent?: number; expenseCount?: number };
+	type TripWithTotals = (typeof $activeTrips)[0] & { totalSpent?: number; expenseCount?: number; isShared?: boolean; isOwner?: boolean };
 </script>
 
 <svelte:head>
@@ -45,7 +46,14 @@
 					class="group rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 shadow-[var(--card-shadow)] transition-all hover:border-[var(--primary)] hover:shadow-[var(--card-shadow-hover)]"
 					data-testid="trip-card"
 				>
-					<h3 class="text-base font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{trip.name}</h3>
+					<div class="flex items-center gap-2">
+						<h3 class="text-base font-semibold text-[var(--text)] group-hover:text-[var(--primary)]">{trip.name}</h3>
+						{#if t.isShared}
+							<span class="flex items-center gap-1 text-xs text-[var(--text-muted)]" title={t.isOwner === false ? 'Shared with you' : 'Shared'}>
+								<Users size={12} />
+							</span>
+						{/if}
+					</div>
 
 					{#if trip.destination}
 						<div class="mt-1 flex items-center gap-1 text-xs text-[var(--text-muted)]">

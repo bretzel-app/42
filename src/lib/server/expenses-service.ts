@@ -3,6 +3,7 @@ import { expenses, trips } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { Expense } from '$lib/types/index.js';
+import { canAccessTrip } from './collaborators.js';
 
 function toExpense(row: typeof expenses.$inferSelect): Expense {
 	return {
@@ -22,12 +23,7 @@ function toExpense(row: typeof expenses.$inferSelect): Expense {
 }
 
 function verifyTripAccess(tripId: string, userId: number): boolean {
-	const trip = db
-		.select()
-		.from(trips)
-		.where(and(eq(trips.id, tripId), eq(trips.userId, userId)))
-		.get();
-	return !!trip;
+	return canAccessTrip(tripId, userId).canAccess;
 }
 
 export function listExpenses(tripId: string, userId: number): Expense[] {

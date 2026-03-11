@@ -11,6 +11,16 @@ export interface Trip {
 	createdAt: Date;
 	updatedAt: Date;
 	version: number;
+	collaborators?: Collaborator[];
+	isOwner?: boolean;
+	isShared?: boolean;
+}
+
+export interface Collaborator {
+	userId: number;
+	displayName: string;
+	email: string;
+	addedAt: Date;
 }
 
 export interface Expense {

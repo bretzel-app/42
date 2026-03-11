@@ -132,6 +132,26 @@ export const loginAttempts = sqliteTable(
 	(table) => [index('login_attempts_ip_timestamp_idx').on(table.ip, table.timestamp)]
 );
 
+export const tripCollaborators = sqliteTable(
+	'trip_collaborators',
+	{
+		tripId: text('trip_id')
+			.references(() => trips.id, { onDelete: 'cascade' })
+			.notNull(),
+		userId: integer('user_id')
+			.references(() => users.id)
+			.notNull(),
+		addedBy: integer('added_by')
+			.references(() => users.id)
+			.notNull(),
+		addedAt: integer('added_at', { mode: 'timestamp' }).notNull()
+	},
+	(table) => [
+		uniqueIndex('trip_collaborators_trip_user_unique').on(table.tripId, table.userId),
+		index('trip_collaborators_user_id_idx').on(table.userId)
+	]
+);
+
 export const userPreferences = sqliteTable(
 	'user_preferences',
 	{

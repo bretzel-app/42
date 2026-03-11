@@ -1,13 +1,13 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
-import { getUserId, getTripForUser } from '$lib/server/api-utils.js';
+import { getUserId, requireTripAccess } from '$lib/server/api-utils.js';
 import { db } from '$lib/server/db/index.js';
 import { tripCurrencies } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ params, ...event }) => {
 	const userId = getUserId(event);
-	getTripForUser(db, params.id, userId);
+	requireTripAccess(db, params.id, userId);
 
 	const currencies = db
 		.select()
@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({ params, ...event }) => {
 
 export const PUT: RequestHandler = async ({ params, request, ...event }) => {
 	const userId = getUserId(event);
-	getTripForUser(db, params.id, userId);
+	requireTripAccess(db, params.id, userId);
 
 	const body: { currencyCode: string; exchangeRate: string }[] = await request.json();
 

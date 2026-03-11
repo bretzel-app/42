@@ -228,6 +228,7 @@ export async function deleteUser(userId: number): Promise<void> {
 	sqlite.prepare('DELETE FROM sync_log WHERE user_id = ?').run(userId);
 	sqlite.prepare('DELETE FROM expenses WHERE user_id = ?').run(userId);
 	sqlite.prepare('DELETE FROM trip_currencies WHERE trip_id IN (SELECT id FROM trips WHERE user_id = ?)').run(userId);
+	sqlite.prepare('DELETE FROM trip_collaborators WHERE user_id = ? OR added_by = ?').run(userId, userId);
 	sqlite.prepare('DELETE FROM trips WHERE user_id = ?').run(userId);
 	sqlite.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
 	sqlite.prepare('DELETE FROM user_preferences WHERE user_id = ?').run(userId);

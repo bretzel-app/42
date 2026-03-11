@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { Db } from './db/index.js';
 import { trips } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { canAccessTrip } from './collaborators.js';
 
 type EventWithLocals = {
 	locals: App.Locals;
@@ -29,4 +30,15 @@ export function getTripForUser(db: Db, tripId: string, userId: number) {
 		.get();
 	if (!trip) throw error(404, 'Not found');
 	return trip;
+}
+
+/**
+ * Verify a user can access a trip (owner or collaborator) and return it.
+ */
+export function requireTripAccess(db: Db, tripId: string, userId: number): { trip: typeof trips.$inferSelect; isOwner: boolean } {
+	const { canAccess, isOwner } = canAccessTrip(tripId, userId);
+	if (!canAccess) throw error(404, 'Not found');
+	const trip = db.select().from(trips).where(eq(trips.id, tripId)).get();
+	if (!trip) throw error(404, 'Not found');
+	return { trip, isOwner };
 }
