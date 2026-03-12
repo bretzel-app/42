@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { loadExpenses, activeExpenses } from '$lib/stores/expenses.js';
+	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import { formatCents, convertToHomeCurrency } from '$lib/utils/currency.js';
 	import { formatDateRange, tripDurationDays, elapsedDays } from '$lib/utils/dates.js';
 	import { formatNumber } from '$lib/utils/format.js';
@@ -23,6 +24,15 @@
 	const tripId = $derived($page.params.id!);
 
 	onMount(async () => {
+		// Load from IDB first for instant offline display
+		try {
+			const idbTrip = await getTrip(tripId);
+			if (idbTrip) {
+				trip = idbTrip;
+			}
+		} catch { /* IDB unavailable */ }
+
+		// Then try server for fresh data
 		try {
 			const [tripRes, collabRes] = await Promise.all([
 				fetch(`/api/trips/${tripId}`),
@@ -33,11 +43,12 @@
 				trip = data;
 				isOwner = data.isOwner !== false;
 				ownerName = data.ownerName || '';
+				try { await putTrip(data); } catch { /* IDB unavailable */ }
 			}
 			if (collabRes.ok) {
 				collaborators = await collabRes.json();
 			}
-		} catch { /* offline */ }
+		} catch { /* offline — IDB data stands */ }
 		await loadExpenses(tripId);
 		loading = false;
 	});
