@@ -8,6 +8,7 @@
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
 	import { getCategoryLabel } from '$lib/types/categories.js';
 	import type { Trip, Expense } from '$lib/types/index.js';
+	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
@@ -18,10 +19,20 @@
 	let loading = $state(true);
 
 	onMount(async () => {
+		// Load from IDB first for instant offline display
+		try {
+			const idbTrip = await getTrip(tripId);
+			if (idbTrip) trip = idbTrip;
+		} catch { /* IDB unavailable */ }
+
+		// Then try server for fresh data
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
-			if (res.ok) trip = await res.json();
-		} catch { /* offline */ }
+			if (res.ok) {
+				trip = await res.json();
+				try { await putTrip(trip!); } catch { /* IDB unavailable */ }
+			}
+		} catch { /* offline — IDB data stands */ }
 		await loadExpenses(tripId);
 		loading = false;
 	});

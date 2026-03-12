@@ -9,6 +9,7 @@
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
 	import type { Trip, Expense, CategoryId } from '$lib/types/index.js';
+	import { getTrip, putTrip, getExpensesByTrip } from '$lib/sync/idb.js';
 
 	const tripId = $derived($page.params.id!);
 	const expenseId = $derived($page.params.expenseId!);
@@ -24,26 +25,41 @@
 	let saving = $state(false);
 	let errorMsg = $state('');
 
+	function populateFromExpense(expense: Expense) {
+		amountInput = formatAmount(expense.amount);
+		currency = expense.currency;
+		exchangeRate = expense.exchangeRate;
+		categoryId = expense.categoryId;
+		date = toDateInput(expense.date);
+		note = expense.note;
+	}
+
 	onMount(async () => {
+		// Load from IDB first for instant offline display
+		try {
+			const idbTrip = await getTrip(tripId);
+			if (idbTrip) trip = idbTrip;
+			const idbExpenses = await getExpensesByTrip(tripId);
+			const idbExpense = idbExpenses.find((e) => e.id === expenseId);
+			if (idbExpense) populateFromExpense(idbExpense);
+		} catch { /* IDB unavailable */ }
+
+		// Then try server for fresh data
 		try {
 			const [tripRes, expensesRes] = await Promise.all([
 				fetch(`/api/trips/${tripId}`),
 				fetch(`/api/trips/${tripId}/expenses`)
 			]);
-			if (tripRes.ok) trip = await tripRes.json();
+			if (tripRes.ok) {
+				trip = await tripRes.json();
+				try { await putTrip(trip!); } catch { /* IDB unavailable */ }
+			}
 			if (expensesRes.ok) {
 				const allExpenses: Expense[] = await expensesRes.json();
 				const expense = allExpenses.find((e) => e.id === expenseId);
-				if (expense) {
-					amountInput = formatAmount(expense.amount);
-					currency = expense.currency;
-					exchangeRate = expense.exchangeRate;
-					categoryId = expense.categoryId;
-					date = toDateInput(expense.date);
-					note = expense.note;
-				}
+				if (expense) populateFromExpense(expense);
 			}
-		} catch { /* offline */ }
+		} catch { /* offline — IDB data stands */ }
 		loading = false;
 	});
 
