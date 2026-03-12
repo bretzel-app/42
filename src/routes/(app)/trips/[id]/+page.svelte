@@ -63,7 +63,10 @@
 
 	const duration = $derived(trip ? tripDurationDays(trip.startDate, trip.endDate) : 1);
 	const elapsed = $derived(trip ? elapsedDays(trip.startDate, trip.endDate) : 1);
-	const avgPerDay = $derived(elapsed > 0 ? onTripCents / elapsed : 0);
+	// Pre-trip expenses spread over total duration, on-trip over elapsed days
+	const avgPerDay = $derived(
+		(duration > 0 ? preTripCents / duration : 0) + (elapsed > 0 ? onTripCents / elapsed : 0)
+	);
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
 	const projectedTotal = $derived(preTripCents + (duration > 0 ? avgPerDay * duration : onTripCents));
 
@@ -114,29 +117,32 @@
 	);
 
 	// Category breakdown with per-day averages
+	// Pre-trip expenses are spread over the total trip duration for daily averages
 	const categoryTotals = $derived(() => {
 		const totals = new Map<CategoryId, number>();
+		const preTripTotals = new Map<CategoryId, number>();
+		const onTripTotals = new Map<CategoryId, number>();
+
 		for (const expense of $activeExpenses) {
 			const home = convertToHomeCurrency(expense.amount, expense.exchangeRate);
 			totals.set(expense.categoryId, (totals.get(expense.categoryId) || 0) + home);
-		}
-
-		// Count unique on-trip days per category for daily averages
-		const onTripDaysPerCat = new Map<CategoryId, Set<string>>();
-		for (const expense of $activeExpenses) {
-			const expDate = new Date(expense.date).getTime();
-			if (expDate >= tripStart) {
-				if (!onTripDaysPerCat.has(expense.categoryId)) {
-					onTripDaysPerCat.set(expense.categoryId, new Set());
-				}
-				onTripDaysPerCat.get(expense.categoryId)!.add(new Date(expense.date).toDateString());
+			const isPreTrip = new Date(expense.date).getTime() < tripStart;
+			if (isPreTrip) {
+				preTripTotals.set(expense.categoryId, (preTripTotals.get(expense.categoryId) || 0) + home);
+			} else {
+				onTripTotals.set(expense.categoryId, (onTripTotals.get(expense.categoryId) || 0) + home);
 			}
 		}
 
 		return CATEGORIES
 			.map((cat) => {
 				const total = totals.get(cat.id) || 0;
-				const avgPerDay = elapsed > 0 ? total / elapsed : 0;
+				const preTrip = preTripTotals.get(cat.id) || 0;
+				const onTrip = onTripTotals.get(cat.id) || 0;
+				// Pre-trip expenses averaged over total duration, on-trip over elapsed days
+				const preTripDaily = duration > 0 ? preTrip / duration : 0;
+				const onTripDaily = elapsed > 0 ? onTrip / elapsed : 0;
+				const avgPerDay = preTripDaily + onTripDaily;
 				return { ...cat, total, avgPerDay };
 			})
 			.filter((c) => c.total > 0)
@@ -241,7 +247,7 @@
 				<p class="text-xs text-[var(--text-muted)]">Avg / day</p>
 				<p class="mt-1 text-lg font-bold text-[var(--text)]">{formatCents(Math.round(avgPerDay), trip.homeCurrency)}</p>
 				{#if preTripCents > 0}
-					<p class="mt-0.5 text-xs text-[var(--text-muted)]">On-trip only</p>
+					<p class="mt-0.5 text-xs text-[var(--text-muted)]">Incl. pre-trip</p>
 				{/if}
 			</div>
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
