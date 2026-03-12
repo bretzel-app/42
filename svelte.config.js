@@ -5,7 +5,10 @@ const config = {
 	kit: {
 		adapter: adapter({
 			out: 'build'
-		})
+		}),
+		serviceWorker: {
+			register: false
+		}
 	}
 };
 
