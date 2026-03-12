@@ -47,7 +47,7 @@ export function listTripsWithTotals(userId: number): (Trip & { totalSpent: numbe
 	const ownedRows = db
 		.select({
 			trip: trips,
-			totalSpent: sql<number>`coalesce(sum(case when ${expenses.deleted} = 0 then ${expenses.amount} else 0 end), 0)`.as('total_spent'),
+			totalSpent: sql<number>`coalesce(sum(case when ${expenses.deleted} = 0 then round(${expenses.amount} * cast(${expenses.exchangeRate} as real)) else 0 end), 0)`.as('total_spent'),
 			expenseCount: sql<number>`count(case when ${expenses.deleted} = 0 then 1 end)`.as('expense_count')
 		})
 		.from(trips)
@@ -61,7 +61,7 @@ export function listTripsWithTotals(userId: number): (Trip & { totalSpent: numbe
 		? db
 				.select({
 					trip: trips,
-					totalSpent: sql<number>`coalesce(sum(case when ${expenses.deleted} = 0 then ${expenses.amount} else 0 end), 0)`.as('total_spent'),
+					totalSpent: sql<number>`coalesce(sum(case when ${expenses.deleted} = 0 then round(${expenses.amount} * cast(${expenses.exchangeRate} as real)) else 0 end), 0)`.as('total_spent'),
 					expenseCount: sql<number>`count(case when ${expenses.deleted} = 0 then 1 end)`.as('expense_count')
 				})
 				.from(trips)
