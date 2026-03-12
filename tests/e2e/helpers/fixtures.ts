@@ -83,6 +83,8 @@ export async function addExpense(
 	opts: { amount: string; category?: string; note?: string; date?: string }
 ) {
 	await page.getByTestId('add-expense-btn').click();
+	// Wait for the expense form to load
+	await page.waitForURL(/\/expenses\/new/);
 	await page.getByTestId('expense-amount-input').fill(opts.amount);
 	if (opts.category) {
 		await page.getByTestId(`category-${opts.category}`).click();
@@ -94,8 +96,8 @@ export async function addExpense(
 		await page.getByTestId('expense-note-input').fill(opts.note);
 	}
 	await page.getByTestId('expense-save-btn').click();
-	// Should redirect back to expenses or trip page
-	await page.waitForURL(/\/trips\/.+/);
+	// Wait for redirect away from /new back to the expenses list
+	await page.waitForURL(/\/trips\/[^/]+\/expenses$/);
 }
 
 export { expect, TEST_EMAIL, TEST_PASSWORD };

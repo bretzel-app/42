@@ -21,7 +21,7 @@ test.describe('Expense management', () => {
 		await addExpense(page, { amount: '200', category: 'accommodation' });
 
 		// Then the dashboard shows the correct total spent
-		await page.goto(page.url().replace(/\/expenses.*/, ''));
+		await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
 		await expect(page.getByText('Spent:')).toBeVisible();
 		await expect(page.getByText('300.00').first()).toBeVisible();
 	});
@@ -51,10 +51,7 @@ test.describe('Expense management', () => {
 		await createTrip(page, { name: 'Grouped Test' });
 		await addExpense(page, { amount: '50', category: 'transport', note: 'Metro ticket' });
 
-		// When the user views the expense list
-		await page.getByText('Expenses').click();
-
-		// Then expenses are shown with their details
+		// Then the expense list shows the expense details
 		await expect(page.getByTestId('expense-row')).toBeVisible();
 		await expect(page.getByText('Metro ticket')).toBeVisible();
 	});
