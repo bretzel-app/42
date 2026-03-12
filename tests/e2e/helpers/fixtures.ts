@@ -56,7 +56,7 @@ export async function setupAndLogin(page: Page) {
 /** Create a trip via the UI. Use in Given steps for state setup. */
 export async function createTrip(
 	page: Page,
-	opts: { name: string; destination?: string; budget?: string }
+	opts: { name: string; destination?: string; budget?: string; startDate?: string; endDate?: string }
 ) {
 	await page.getByTestId('new-trip-btn').click();
 	await page.getByTestId('trip-name-input').fill(opts.name);
@@ -66,6 +66,12 @@ export async function createTrip(
 	if (opts.budget) {
 		await page.getByTestId('trip-budget-input').fill(opts.budget);
 	}
+	if (opts.startDate) {
+		await page.getByTestId('trip-start-date').fill(opts.startDate);
+	}
+	if (opts.endDate) {
+		await page.getByTestId('trip-end-date').fill(opts.endDate);
+	}
 	await page.getByTestId('trip-save-btn').click();
 	// Should redirect to the trip dashboard
 	await page.waitForURL(/\/trips\/.+/);
@@ -74,12 +80,15 @@ export async function createTrip(
 /** Add an expense to the current trip. Assumes we're on a trip page. */
 export async function addExpense(
 	page: Page,
-	opts: { amount: string; category?: string; note?: string }
+	opts: { amount: string; category?: string; note?: string; date?: string }
 ) {
 	await page.getByTestId('add-expense-btn').click();
 	await page.getByTestId('expense-amount-input').fill(opts.amount);
 	if (opts.category) {
 		await page.getByTestId(`category-${opts.category}`).click();
+	}
+	if (opts.date) {
+		await page.getByTestId('expense-date').fill(opts.date);
 	}
 	if (opts.note) {
 		await page.getByTestId('expense-note-input').fill(opts.note);

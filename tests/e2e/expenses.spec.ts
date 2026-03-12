@@ -1,4 +1,4 @@
-import { test, expect, createTrip, addExpense } from './helpers/fixtures.js';
+import { test, expect, createTrip, addExpense, tripCard } from './helpers/fixtures.js';
 
 test.describe('Expense management', () => {
 	test('Scenario: User adds an expense to a trip', async ({ authenticatedPage: page }) => {
@@ -24,6 +24,26 @@ test.describe('Expense management', () => {
 		await page.goto(page.url().replace(/\/expenses.*/, ''));
 		await expect(page.getByText('Spent:')).toBeVisible();
 		await expect(page.getByText('300.00').first()).toBeVisible();
+	});
+
+	test('Scenario: Pre-trip expenses are included in the trip list budget gauge', async ({ authenticatedPage: page }) => {
+		// Given a trip starting Mar 20 with a 1000 EUR budget
+		await createTrip(page, {
+			name: 'Pre-spend Test',
+			budget: '1000',
+			startDate: '2026-03-20',
+			endDate: '2026-03-25'
+		});
+
+		// When the user adds a pre-trip expense (before start date) and an on-trip expense
+		await addExpense(page, { amount: '300', category: 'transport', note: 'Flight', date: '2026-03-10' });
+		await addExpense(page, { amount: '50', category: 'food', note: 'Dinner', date: '2026-03-21' });
+
+		// Then the trips list budget gauge includes both expenses
+		await page.goto('/');
+		const card = tripCard(page, 'Pre-spend Test');
+		await expect(card).toBeVisible();
+		await expect(card.getByText('350')).toBeVisible();
 	});
 
 	test('Scenario: Expense list groups expenses by date', async ({ authenticatedPage: page }) => {

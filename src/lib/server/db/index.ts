@@ -117,6 +117,13 @@ sqlite.exec(`
 		value TEXT NOT NULL,
 		updated_at INTEGER NOT NULL
 	);
+
+	CREATE TABLE IF NOT EXISTS trip_collaborators (
+		trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+		user_id INTEGER NOT NULL REFERENCES users(id),
+		added_by INTEGER NOT NULL REFERENCES users(id),
+		added_at INTEGER NOT NULL
+	);
 `);
 
 // Create indexes
@@ -131,6 +138,8 @@ sqlite.exec(`
 	CREATE INDEX IF NOT EXISTS sync_log_timestamp_idx ON sync_log(timestamp);
 	CREATE INDEX IF NOT EXISTS login_attempts_ip_timestamp_idx ON login_attempts(ip, timestamp);
 	CREATE UNIQUE INDEX IF NOT EXISTS user_preferences_user_key_unique ON user_preferences(user_id, key);
+	CREATE UNIQUE INDEX IF NOT EXISTS trip_collaborators_trip_user_unique ON trip_collaborators(trip_id, user_id);
+	CREATE INDEX IF NOT EXISTS trip_collaborators_user_id_idx ON trip_collaborators(user_id);
 `);
 
 // Re-enable foreign keys
