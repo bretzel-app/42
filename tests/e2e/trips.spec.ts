@@ -15,7 +15,8 @@ test.describe('Trip management', () => {
 		await createTrip(page, { name: 'Tokyo 2025', destination: 'Tokyo, Japan' });
 
 		// When the user navigates to the trip list
-		await page.goto('/');
+		await page.getByRole('link', { name: 'Trips' }).click();
+		await page.waitForURL('/');
 
 		// Then the trip card is visible
 		await expect(tripCard(page, 'Tokyo 2025')).toBeVisible();
