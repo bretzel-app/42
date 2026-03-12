@@ -79,7 +79,9 @@
 		(duration > 0 ? preTripCents / duration : 0) + (elapsed > 0 ? onTripCents / elapsed : 0)
 	);
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
-	const projectedTotal = $derived(preTripCents + (duration > 0 ? avgPerDay * duration : onTripCents));
+	const projectedTotal = $derived(
+		preTripCents + (elapsed > 0 && duration > 0 ? (onTripCents / elapsed) * duration : onTripCents)
+	);
 
 	// Days until trip starts (for upcoming) or days left (for ongoing)
 	const daysUntilStart = $derived(() => {
