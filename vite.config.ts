@@ -33,9 +33,8 @@ export default defineConfig({
 				background_color: '#f0e6d3',
 				theme_color: '#C8860A',
 				icons: [
-					{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-					{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-					{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+					{ src: 'web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png' },
+					{ src: 'web-app-manifest-512x512.png', sizes: '512x512', type: 'image/png' }
 				]
 			},
 			workbox: {
