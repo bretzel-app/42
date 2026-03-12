@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import Header from '$lib/components/Layout/Header.svelte';
 	import Sidebar from '$lib/components/Layout/Sidebar.svelte';
 	import Toast from '$lib/components/Layout/Toast.svelte';
@@ -12,6 +13,12 @@
 	let sidebarOpen = $state(false);
 	const prefs = $derived(getPreferences());
 
+	// Initialize IDB at script level (before children mount) so child
+	// pages can read from the correct user-scoped database in their onMount.
+	if (browser && data.user) {
+		initDb(data.user.id);
+	}
+
 	onMount(() => {
 		initPreferences();
 		const prefState = getPreferences();
@@ -19,9 +26,6 @@
 			sidebarOpen = false;
 		} else {
 			sidebarOpen = window.matchMedia('(min-width: 1024px)').matches;
-		}
-		if (data.user) {
-			initDb(data.user.id);
 		}
 		loadTrips();
 		startSync();
