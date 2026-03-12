@@ -79,12 +79,6 @@
 		(duration > 0 ? preTripCents / duration : 0) + (elapsed > 0 ? onTripCents / elapsed : 0)
 	);
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
-	// Projected total: what we've spent + current daily rate × remaining days
-	const onTripDailyRate = $derived(elapsed > 0 ? onTripCents / elapsed : 0);
-	const projectedTotal = $derived(
-		totalSpentCents + onTripDailyRate * daysRemaining()
-	);
-
 	// Days until trip starts (for upcoming) or days left (for ongoing)
 	const daysUntilStart = $derived(() => {
 		if (!trip) return 0;
@@ -106,6 +100,12 @@
 		const diffMs = end.getTime() - today.getTime();
 		return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 	});
+
+	// Projected total: what we've spent + current daily rate × remaining days
+	const onTripDailyRate = $derived(elapsed > 0 ? onTripCents / elapsed : 0);
+	const projectedTotal = $derived(
+		totalSpentCents + onTripDailyRate * daysRemaining()
+	);
 
 	// Trip status
 	const tripStatus = $derived(() => {
