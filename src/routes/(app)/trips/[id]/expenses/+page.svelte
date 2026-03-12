@@ -10,6 +10,7 @@
 	import type { Trip, Expense } from '$lib/types/index.js';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
+	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Pencil from 'lucide-svelte/icons/pencil';
 
 	const tripId = $derived($page.params.id!);
@@ -49,11 +50,20 @@
 
 <div class="pb-8">
 	<div class="mb-6 flex items-center justify-between">
-		<div>
-			<h2 class="text-xl font-bold text-[var(--text)]">Expenses</h2>
-			{#if trip}
-				<p class="text-sm text-[var(--text-muted)]">{trip.name}</p>
-			{/if}
+		<div class="flex items-center gap-3">
+			<a
+				href="/trips/{tripId}"
+				class="rounded-sm p-1 text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
+				aria-label="Back to dashboard"
+			>
+				<ArrowLeft size={20} />
+			</a>
+			<div>
+				<h2 class="text-xl font-bold text-[var(--text)]">Expenses</h2>
+				{#if trip}
+					<p class="text-sm text-[var(--text-muted)]">{trip.name}</p>
+				{/if}
+			</div>
 		</div>
 		<a
 			href="/trips/{tripId}/expenses/new"
