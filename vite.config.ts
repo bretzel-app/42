@@ -52,7 +52,8 @@ export default defineConfig({
 						}
 					},
 					{
-						urlPattern: /^https?:\/\/.*\/api\//,
+						urlPattern: ({ request, url }) =>
+							request.method === 'GET' && /\/api\//.test(url.pathname),
 						handler: 'NetworkFirst',
 						options: {
 							cacheName: 'api-cache',
