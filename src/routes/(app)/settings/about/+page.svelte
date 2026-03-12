@@ -25,8 +25,7 @@
 		<h3 class="text-sm font-bold text-[var(--text)]">Bretzel App Universe</h3>
 		<p class="text-sm leading-relaxed text-[var(--text-muted)]">
 			42 is part of the
-			<a href="https://bretzel.app" target="_blank" rel="noopener noreferrer" class="text-[var(--primary)] underline hover:text-[var(--primary-hover)]">Bretzel</a>
-			family of apps.
+			<a href="https://bretzel.app" target="_blank" rel="noopener noreferrer" class="text-[var(--primary)] underline hover:text-[var(--primary-hover)]">bretzel.app</a> universe.
 		</p>
 	</section>
 
