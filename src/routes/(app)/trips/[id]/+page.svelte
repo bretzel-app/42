@@ -115,7 +115,8 @@
 	const budgetRemainingPerDay = $derived(() => {
 		if (!trip?.totalBudget) return null;
 		const remaining = trip.totalBudget - totalSpentCents;
-		const days = daysRemaining();
+		// Upcoming trips: spread over full trip duration; ongoing: spread over remaining trip days
+		const days = tripStatus() === 'upcoming' ? duration : daysRemaining();
 		if (days <= 0) return null;
 		return Math.max(0, Math.round(remaining / days));
 	});
