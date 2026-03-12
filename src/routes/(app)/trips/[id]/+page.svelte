@@ -153,28 +153,26 @@
 {:else if trip}
 	<div class="pb-8">
 		<!-- Header -->
-		<div class="mb-6 flex items-start justify-between">
-			<div>
-				<h2 class="text-xl font-bold text-[var(--text)]">{trip.name}</h2>
-				{#if trip.destination}
-					<p class="text-sm text-[var(--text-muted)]">{trip.destination}</p>
+		<div class="mb-6">
+			<h2 class="text-xl font-bold text-[var(--text)]">{trip.name}</h2>
+			{#if trip.destination}
+				<p class="text-sm text-[var(--text-muted)]">{trip.destination}</p>
+			{/if}
+			<p class="text-xs text-[var(--text-muted)]">
+				{formatDateRange(trip.startDate, trip.endDate)} · {duration} days · {trip.numberOfPeople} {trip.numberOfPeople === 1 ? 'person' : 'people'}
+				{#if tripStatus() === 'upcoming'}
+					<span class="ml-1 text-[var(--primary)]">· Starts in {daysUntilStart()} {daysUntilStart() === 1 ? 'day' : 'days'}</span>
+				{:else if tripStatus() === 'ongoing' && daysRemaining() > 0}
+					<span class="ml-1 text-[var(--primary)]">· {daysRemaining()} days left</span>
+				{:else if tripStatus() === 'completed'}
+					<span class="ml-1">· Completed</span>
 				{/if}
-				<p class="text-xs text-[var(--text-muted)]">
-					{formatDateRange(trip.startDate, trip.endDate)} · {duration} days · {trip.numberOfPeople} {trip.numberOfPeople === 1 ? 'person' : 'people'}
-					{#if tripStatus() === 'upcoming'}
-						<span class="ml-1 text-[var(--primary)]">· Starts in {daysUntilStart()} {daysUntilStart() === 1 ? 'day' : 'days'}</span>
-					{:else if tripStatus() === 'ongoing' && daysRemaining() > 0}
-						<span class="ml-1 text-[var(--primary)]">· {daysRemaining()} days left</span>
-					{:else if tripStatus() === 'completed'}
-						<span class="ml-1">· Completed</span>
-					{/if}
-				</p>
-			</div>
-			<div class="flex gap-2">
+			</p>
+			<div class="mt-2 flex justify-end gap-2">
 				{#if isOwner}
 					<button
 						onclick={() => (showShare = true)}
-						class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text)] hover:border-[var(--primary)]"
+						class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text)] hover:border-[var(--primary)]"
 						data-testid="share-trip-btn"
 					>
 						<Users size={14} />
@@ -184,14 +182,14 @@
 						{/if}
 					</button>
 				{:else if collaborators.length > 0}
-					<span class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-muted)]">
+					<span class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
 						<Users size={14} />
 						Shared · {collaborators.length + 1} members
 					</span>
 				{/if}
 				<a
 					href="/trips/{trip.id}/edit"
-					class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text)] hover:border-[var(--primary)]"
+					class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text)] hover:border-[var(--primary)]"
 					data-testid="edit-trip-btn"
 				>
 					<Pencil size={14} />
@@ -199,7 +197,7 @@
 				</a>
 				<a
 					href="/trips/{trip.id}/expenses/new"
-					class="flex items-center gap-1 rounded-sm bg-[var(--primary)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
+					class="flex items-center gap-1 rounded-sm bg-[var(--primary)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
 					data-testid="add-expense-btn"
 				>
 					<Plus size={14} />
