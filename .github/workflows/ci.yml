@@ -105,4 +105,5 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: false
+          provenance: false
           tags: 42:ci
