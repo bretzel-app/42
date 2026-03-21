@@ -9,14 +9,13 @@
 	import { formatNumber } from '$lib/utils/format.js';
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
-	import type { Trip, Expense, CategoryId, Collaborator, MemberBalance, SuggestedTransfer } from '$lib/types/index.js';
+	import type { Trip, Expense, CategoryId, MemberBalance, SuggestedTransfer } from '$lib/types/index.js';
 	import Pencil from 'lucide-svelte/icons/pencil';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Users from 'lucide-svelte/icons/users';
 
 	let trip = $state<Trip | null>(null);
 	let loading = $state(true);
-	let collaborators = $state<Collaborator[]>([]);
 	let isOwner = $state(true);
 	let ownerName = $state('');
 	let balances = $state<MemberBalance[]>([]);
@@ -35,19 +34,13 @@
 
 		// Then try server for fresh data
 		try {
-			const [tripRes, collabRes] = await Promise.all([
-				fetch(`/api/trips/${tripId}`),
-				fetch(`/api/trips/${tripId}/collaborators`)
-			]);
+			const tripRes = await fetch(`/api/trips/${tripId}`);
 			if (tripRes.ok) {
 				const data = await tripRes.json();
 				trip = data;
 				isOwner = data.isOwner !== false;
 				ownerName = data.ownerName || '';
 				try { await putTrip(data); } catch { /* IDB unavailable */ }
-			}
-			if (collabRes.ok) {
-				collaborators = await collabRes.json();
 			}
 		} catch { /* offline — IDB data stands */ }
 
@@ -218,24 +211,17 @@
 				{/if}
 			</p>
 			<div class="mt-2 flex justify-end gap-2">
-				{#if isOwner}
-					<a
-						href="/trips/{trip.id}/edit?tab=members"
-						class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text)] hover:border-[var(--primary)]"
-						data-testid="members-btn"
-					>
-						<Users size={14} />
-						Members
-						{#if $activeMembers.length > 0}
-							<span class="ml-1 text-xs text-[var(--text-muted)]">({$activeMembers.length})</span>
-						{/if}
-					</a>
-				{:else if collaborators.length > 0}
-					<span class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
-						<Users size={14} />
-						Shared · {collaborators.length + 1} members
-					</span>
-				{/if}
+				<a
+					href="/trips/{trip.id}/edit?tab=members"
+					class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text)] hover:border-[var(--primary)]"
+					data-testid="members-btn"
+				>
+					<Users size={14} />
+					Members
+					{#if $activeMembers.length > 0}
+						<span class="ml-1 text-xs text-[var(--text-muted)]">({$activeMembers.length})</span>
+					{/if}
+				</a>
 				<a
 					href="/trips/{trip.id}/edit"
 					class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text)] hover:border-[var(--primary)]"
@@ -435,18 +421,6 @@
 			>
 				View all expenses ({$activeExpenses.length})
 			</a>
-			{#if !isOwner}
-				<button
-					onclick={async () => {
-						if (!confirm('Leave this shared trip?')) return;
-						const res = await fetch(`/api/trips/${tripId}/collaborators?userId=self`, { method: 'DELETE' });
-						if (res.ok) window.location.href = '/';
-					}}
-					class="rounded-sm border border-[var(--border-subtle)] px-4 py-2 text-sm text-[var(--destructive)] hover:border-[var(--destructive)]"
-				>
-					Leave trip
-				</button>
-			{/if}
 		</div>
 	</div>
 {:else}
