@@ -35,6 +35,25 @@
 	// For custom mode: editable inputs keyed by memberId
 	let customAmounts = $state<Record<string, string>>({});
 
+	// Detect if incoming splits are custom (not equal) when editing
+	let initialSplitModeDetected = $state(false);
+	$effect(() => {
+		if (!initialSplitModeDetected && splits.length > 0 && members.length >= 2) {
+			const includedIds = splits.filter(s => s.amount > 0).map(s => s.memberId);
+			if (includedIds.length > 0) {
+				const equalResult = computeEqualSplit(amount, includedIds);
+				const isEqual = splits.every(s => {
+					if (s.amount === 0 && !(s.memberId in equalResult)) return true;
+					return equalResult[s.memberId] === s.amount;
+				});
+				if (!isEqual) {
+					splitMode = 'custom';
+				}
+			}
+			initialSplitModeDetected = true;
+		}
+	});
+
 	// Initialise custom amounts from current splits (e.g. when editing)
 	$effect(() => {
 		if (splits.length > 0 && Object.keys(customAmounts).length === 0) {
@@ -54,6 +73,7 @@
 	// Recalculate equal splits when amount or checked members change
 	$effect(() => {
 		if (splitMode !== 'equal') return;
+		if (!initialSplitModeDetected && splits.length > 0) return;
 		const ids = [...checkedMemberIds];
 		if (ids.length === 0 || amount <= 0) {
 			onSplitsChange([]);

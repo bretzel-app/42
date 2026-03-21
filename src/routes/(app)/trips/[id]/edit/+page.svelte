@@ -12,7 +12,10 @@
 
 	const tripId = $derived($page.params.id!);
 
-	let tab = $state<'details' | 'currencies' | 'members'>('details');
+	const tabParam = $page.url.searchParams.get('tab');
+	let tab = $state<'details' | 'currencies' | 'members'>(
+		tabParam === 'members' || tabParam === 'currencies' ? tabParam : 'details'
+	);
 
 	let name = $state('');
 	let destination = $state('');

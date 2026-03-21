@@ -10,6 +10,7 @@ import {
 } from '$lib/server/db/schema.js';
 import { eq, gt, and, inArray } from 'drizzle-orm';
 import type { SyncQueueItem } from './idb.js';
+import { getSharedTripIds } from '$lib/server/collaborators.js';
 
 export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: number): Promise<void> {
 	db.transaction((tx) => {
@@ -179,6 +180,13 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 				}
 				case 'expenseSplit': {
 					if (change.operation === 'delete') {
+						// Verify the split belongs to an expense in a trip the user can access
+						const splitToDelete = tx.select().from(expenseSplits).where(eq(expenseSplits.id, change.entityId)).get();
+						if (!splitToDelete) break;
+						const splitExpense = tx.select().from(expenses).where(eq(expenses.id, splitToDelete.expenseId)).get();
+						if (!splitExpense) break;
+						const splitTrip = tx.select().from(trips).where(eq(trips.id, splitExpense.tripId)).get();
+						if (!splitTrip || splitTrip.userId !== userId) break;
 						tx.update(expenseSplits)
 							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
 							.where(eq(expenseSplits.id, change.entityId))
@@ -223,6 +231,11 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 				}
 				case 'settlement': {
 					if (change.operation === 'delete') {
+						// Verify the settlement belongs to a trip the user can access
+						const settlementToDelete = tx.select().from(settlements).where(eq(settlements.id, change.entityId)).get();
+						if (!settlementToDelete) break;
+						const settlementTrip = tx.select().from(trips).where(eq(trips.id, settlementToDelete.tripId)).get();
+						if (!settlementTrip || settlementTrip.userId !== userId) break;
 						tx.update(settlements)
 							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
 							.where(eq(settlements.id, change.entityId))
@@ -287,11 +300,26 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 export async function getChangesSince(db: Db, sinceTimestamp: number, userId: number) {
 	const since = new Date(sinceTimestamp);
 
+	// Get shared trip IDs (where user is a member but not owner)
+	const sharedTripIds = getSharedTripIds(userId);
+
 	const changedTrips = db
 		.select()
 		.from(trips)
 		.where(and(eq(trips.userId, userId), gt(trips.updatedAt, since)))
 		.all();
+
+	// Also fetch shared trips that changed
+	let changedSharedTrips: typeof trips.$inferSelect[] = [];
+	if (sharedTripIds.length > 0) {
+		changedSharedTrips = db
+			.select()
+			.from(trips)
+			.where(and(inArray(trips.id, sharedTripIds), gt(trips.updatedAt, since)))
+			.all();
+	}
+
+	const allChangedTrips = [...changedTrips, ...changedSharedTrips];
 
 	const changedExpenses = db
 		.select()
@@ -299,24 +327,38 @@ export async function getChangesSince(db: Db, sinceTimestamp: number, userId: nu
 		.where(and(eq(expenses.userId, userId), gt(expenses.updatedAt, since)))
 		.all();
 
+	// Also fetch expenses from shared trips
+	let changedSharedExpenses: typeof expenses.$inferSelect[] = [];
+	if (sharedTripIds.length > 0) {
+		changedSharedExpenses = db
+			.select()
+			.from(expenses)
+			.where(and(inArray(expenses.tripId, sharedTripIds), gt(expenses.updatedAt, since)))
+			.all();
+	}
+
+	const allChangedExpenses = [...changedExpenses, ...changedSharedExpenses];
+	// Deduplicate by id
+	const expenseMap = new Map(allChangedExpenses.map(e => [e.id, e]));
+	const dedupedExpenses = [...expenseMap.values()];
+
 	// Get trip currencies for any changed trips
-	const tripIds = changedTrips.map((t) => t.id);
+	const allChangedTripIds = allChangedTrips.map((t) => t.id);
 	let changedCurrencies: typeof tripCurrencies.$inferSelect[] = [];
-	if (tripIds.length > 0) {
+	if (allChangedTripIds.length > 0) {
 		changedCurrencies = db
 			.select()
 			.from(tripCurrencies)
 			.where(gt(tripCurrencies.updatedAt, since))
 			.all()
 			.filter((tc) => {
-				// Only include currencies for user's trips
-				return changedTrips.some((t) => t.id === tc.tripId);
+				return allChangedTrips.some((t) => t.id === tc.tripId);
 			});
 	}
 
-	// Get all trip IDs accessible to the user (owned trips)
+	// Get all trip IDs accessible to the user (owned + shared)
 	const allUserTrips = db.select({ id: trips.id }).from(trips).where(eq(trips.userId, userId)).all();
-	const allUserTripIds = allUserTrips.map((t) => t.id);
+	const allUserTripIds = [...new Set([...allUserTrips.map((t) => t.id), ...sharedTripIds])];
 
 	let changedMembers: typeof tripMembers.$inferSelect[] = [];
 	let changedSplits: typeof expenseSplits.$inferSelect[] = [];
@@ -355,8 +397,8 @@ export async function getChangesSince(db: Db, sinceTimestamp: number, userId: nu
 	}
 
 	return {
-		trips: changedTrips,
-		expenses: changedExpenses,
+		trips: allChangedTrips,
+		expenses: dedupedExpenses,
 		tripCurrencies: changedCurrencies,
 		tripMembers: changedMembers,
 		expenseSplits: changedSplits,
