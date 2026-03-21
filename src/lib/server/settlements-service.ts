@@ -60,18 +60,18 @@ export function createSettlement(data: {
 	return toSettlement(result);
 }
 
-export function deleteSettlement(settlementId: string): boolean {
+export function deleteSettlement(tripId: string, settlementId: string): boolean {
 	const existing = db
 		.select()
 		.from(settlements)
-		.where(eq(settlements.id, settlementId))
+		.where(and(eq(settlements.id, settlementId), eq(settlements.tripId, tripId)))
 		.get();
 	if (!existing) return false;
 
 	const now = new Date();
 	db.update(settlements)
 		.set({ deleted: 1, updatedAt: now, version: existing.version + 1 })
-		.where(eq(settlements.id, settlementId))
+		.where(and(eq(settlements.id, settlementId), eq(settlements.tripId, tripId)))
 		.run();
 
 	return true;
