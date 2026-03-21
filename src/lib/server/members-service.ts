@@ -39,6 +39,11 @@ export function createMember(
 	data: { tripId: string; name: string; userId?: number | null },
 	addedBy: number
 ): TripMember {
+	const { canAccess } = canAccessTrip(data.tripId, addedBy);
+	if (!canAccess) {
+		throw new Error('Not authorized to add members to this trip');
+	}
+
 	const now = new Date();
 
 	// Auto-add the trip owner as the first member if no members exist yet
@@ -50,7 +55,7 @@ export function createMember(
 
 	if (existingCount === 0) {
 		const trip = db.select().from(trips).where(eq(trips.id, data.tripId)).get();
-		if (trip && trip.userId !== addedBy) {
+		if (trip) {
 			// Add the trip owner as first member
 			const owner = db.select().from(users).where(eq(users.id, trip.userId)).get();
 			if (owner) {
@@ -104,10 +109,13 @@ export function createMember(
 
 export function updateMember(
 	memberId: string,
-	data: { name?: string; userId?: number | null }
+	data: { name?: string; userId?: number | null },
+	callerUserId: number
 ): TripMember | null {
 	const existing = db.select().from(tripMembers).where(eq(tripMembers.id, memberId)).get();
 	if (!existing) return null;
+	const { canAccess } = canAccessTrip(existing.tripId, callerUserId);
+	if (!canAccess) return null;
 
 	const updates: Record<string, unknown> = {
 		updatedAt: new Date(),
