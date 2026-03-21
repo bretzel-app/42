@@ -35,34 +35,28 @@
 	// For custom mode: editable inputs keyed by memberId
 	let customAmounts = $state<Record<string, string>>({});
 
-	// Detect if incoming splits are custom (not equal) when editing
-	let initialSplitModeDetected = $state(false);
+	// On first load with existing splits, detect if they are custom
+	let initialized = $state(false);
 	$effect(() => {
-		if (!initialSplitModeDetected && splits.length > 0 && members.length >= 2) {
-			const includedIds = splits.filter(s => s.amount > 0).map(s => s.memberId);
+		if (initialized || members.length < 2) return;
+		if (splits.length > 0) {
+			// Check if splits match equal distribution
+			const includedIds = splits.filter((s) => s.amount > 0).map((s) => s.memberId);
 			if (includedIds.length > 0) {
 				const equalResult = computeEqualSplit(amount, includedIds);
-				const isEqual = splits.every(s => {
-					if (s.amount === 0 && !(s.memberId in equalResult)) return true;
-					return equalResult[s.memberId] === s.amount;
-				});
+				const isEqual = splits.every((s) => equalResult[s.memberId] === s.amount);
 				if (!isEqual) {
 					splitMode = 'custom';
+					// Seed custom amounts
+					const init: Record<string, string> = {};
+					for (const s of splits) {
+						init[s.memberId] = (s.amount / 100).toFixed(2);
+					}
+					customAmounts = init;
 				}
 			}
-			initialSplitModeDetected = true;
 		}
-	});
-
-	// Initialise custom amounts from current splits (e.g. when editing)
-	$effect(() => {
-		if (splits.length > 0 && Object.keys(customAmounts).length === 0) {
-			const init: Record<string, string> = {};
-			for (const s of splits) {
-				init[s.memberId] = (s.amount / 100).toFixed(2);
-			}
-			customAmounts = init;
-		}
+		initialized = true;
 	});
 
 	// Re-init checkedMemberIds when members list changes (e.g. loaded async)
@@ -73,7 +67,6 @@
 	// Recalculate equal splits when amount or checked members change
 	$effect(() => {
 		if (splitMode !== 'equal') return;
-		if (!initialSplitModeDetected && splits.length > 0) return;
 		const ids = [...checkedMemberIds];
 		if (ids.length === 0 || amount <= 0) {
 			onSplitsChange([]);
