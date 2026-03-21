@@ -20,5 +20,6 @@ export const POST: RequestHandler = async ({ params, request, ...event }) => {
 		{ tripId: params.id, name: data.name.trim(), userId: data.userId ?? null },
 		userId
 	);
+	if (!member) throw error(404, 'Not found');
 	return json(member, { status: 201 });
 };

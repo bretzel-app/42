@@ -27,6 +27,19 @@
 
 	type SplitMode = 'equal' | 'custom';
 
+	// Detect if incoming splits represent a custom (non-equal) distribution
+	function detectInitialMode(): SplitMode {
+		if (splits.length === 0 || members.length === 0) return 'equal';
+		// If all members are included and amounts match equal split, it's equal
+		if (splits.length === members.length) {
+			const equalResult = computeEqualSplit(amount, members.map((m) => m.id));
+			const isEqual = splits.every((s) => equalResult[s.memberId] === s.amount);
+			if (isEqual) return 'equal';
+		}
+		return 'custom';
+	}
+
+	let initialized = $state(false);
 	let splitMode = $state<SplitMode>('equal');
 
 	// For equal mode: which members are checked (by id)
@@ -35,25 +48,45 @@
 	// For custom mode: editable inputs keyed by memberId
 	let customAmounts = $state<Record<string, string>>({});
 
-	// Initialise custom amounts from current splits (e.g. when editing)
+	// One-time initialization from incoming splits (for edit mode)
 	$effect(() => {
-		if (splits.length > 0 && Object.keys(customAmounts).length === 0) {
+		if (initialized || members.length === 0) return;
+		initialized = true;
+
+		const detectedMode = detectInitialMode();
+		splitMode = detectedMode;
+
+		if (splits.length > 0) {
 			const init: Record<string, string> = {};
 			for (const s of splits) {
 				init[s.memberId] = (s.amount / 100).toFixed(2);
 			}
+			for (const m of members) {
+				if (!(m.id in init)) init[m.id] = '0.00';
+			}
 			customAmounts = init;
+		}
+
+		if (detectedMode === 'equal') {
+			checkedMemberIds = new Set(members.map((m) => m.id));
+		} else {
+			// For custom mode, set checked members to those with splits
+			checkedMemberIds = new Set(splits.map((s) => s.memberId));
 		}
 	});
 
-	// Re-init checkedMemberIds when members list changes (e.g. loaded async)
+	// Re-init checkedMemberIds when members list first loads (async)
 	$effect(() => {
-		checkedMemberIds = new Set(members.map((m) => m.id));
+		if (initialized) return;
+		if (members.length > 0) {
+			checkedMemberIds = new Set(members.map((m) => m.id));
+		}
 	});
 
 	// Recalculate equal splits when amount or checked members change
 	$effect(() => {
 		if (splitMode !== 'equal') return;
+		if (!initialized) return;
 		const ids = [...checkedMemberIds];
 		if (ids.length === 0 || amount <= 0) {
 			onSplitsChange([]);

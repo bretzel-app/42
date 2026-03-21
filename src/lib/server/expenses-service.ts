@@ -1,6 +1,6 @@
 import { db } from './db/index.js';
 import { expenses, expenseSplits } from './db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { Expense, ExpenseSplit } from '$lib/types/index.js';
 import { canAccessTrip } from './collaborators.js';
@@ -64,10 +64,10 @@ export function listExpenses(tripId: string, userId: number): (Expense & { split
 		.select()
 		.from(expenseSplits)
 		.where(and(
-			eq(expenseSplits.deleted, 0)
+			eq(expenseSplits.deleted, 0),
+			inArray(expenseSplits.expenseId, expenseIds)
 		))
-		.all()
-		.filter((s) => expenseIds.includes(s.expenseId));
+		.all();
 
 	// Group splits by expenseId
 	const splitsByExpenseId = new Map<string, ExpenseSplit[]>();
@@ -96,7 +96,7 @@ export function createExpense(
 	if (data.paidByMemberId && data.splits?.length) {
 		const splitTotal = data.splits.reduce((sum, s) => sum + s.amount, 0);
 		if (splitTotal !== data.amount) {
-			error(400, 'Split amounts must equal expense amount');
+			throw error(400, 'Split amounts must equal expense amount');
 		}
 	}
 
@@ -179,7 +179,7 @@ export function updateExpense(
 		if (data.splits.length > 0) {
 			const splitTotal = data.splits.reduce((sum, s) => sum + s.amount, 0);
 			if (splitTotal !== effectiveAmount) {
-				error(400, 'Split amounts must equal expense amount');
+				throw error(400, 'Split amounts must equal expense amount');
 			}
 		}
 
