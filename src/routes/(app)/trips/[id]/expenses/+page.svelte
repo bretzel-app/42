@@ -2,12 +2,13 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { loadExpenses, activeExpenses, deleteExpense } from '$lib/stores/expenses.js';
+	import { loadMembers, activeMembers } from '$lib/stores/members.js';
 	import { formatCents, convertToHomeCurrency } from '$lib/utils/currency.js';
 	import { formatDate } from '$lib/utils/dates.js';
 	import { showToast } from '$lib/stores/toast.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
 	import { getCategoryLabel } from '$lib/types/categories.js';
-	import type { Trip, Expense } from '$lib/types/index.js';
+	import type { Trip, Expense, TripMember } from '$lib/types/index.js';
 	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
@@ -33,7 +34,11 @@
 				try { await putTrip(trip!); } catch { /* IDB unavailable */ }
 			}
 		} catch { /* offline — IDB data stands */ }
-		await loadExpenses(tripId);
+
+		await Promise.all([
+			loadExpenses(tripId),
+			loadMembers(tripId)
+		]);
 		loading = false;
 	});
 
@@ -47,6 +52,11 @@
 		}
 		return Array.from(groups.entries());
 	});
+
+	// Member lookup map
+	const memberMap = $derived(
+		new Map($activeMembers.map((m) => [m.id, m.name]))
+	);
 
 	async function handleDelete(expenseId: string) {
 		if (!confirm('Delete this expense?')) return;
@@ -86,6 +96,35 @@
 		</a>
 	</div>
 
+	<!-- Sub-navigation (multi-member trips only) -->
+	{#if $activeMembers.length >= 2}
+		<div class="mb-6" style="border-bottom: 1px solid var(--border-subtle);">
+			<div class="flex gap-0">
+				<a
+					href="/trips/{tripId}"
+					class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
+					style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
+				>
+					Dashboard
+				</a>
+				<a
+					href="/trips/{tripId}/expenses"
+					class="px-4 py-2.5 text-[13px] font-medium transition-colors"
+					style="color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -1px;"
+				>
+					Expenses
+				</a>
+				<a
+					href="/trips/{tripId}/balances"
+					class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
+					style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
+				>
+					Balances
+				</a>
+			</div>
+		</div>
+	{/if}
+
 	{#if loading}
 		<p class="text-sm text-[var(--text-muted)]">Loading...</p>
 	{:else if $activeExpenses.length === 0}
@@ -120,6 +159,11 @@
 									</div>
 									{#if expense.note}
 										<p class="truncate text-xs text-[var(--text-muted)]">{expense.note}</p>
+									{/if}
+									{#if expense.paidByMemberId && memberMap.get(expense.paidByMemberId)}
+										<p class="text-[11px]" style="color: var(--text-muted);">
+											Paid by {memberMap.get(expense.paidByMemberId)}
+										</p>
 									{/if}
 								</div>
 								<div class="flex items-center gap-1 max-md:opacity-100 md:opacity-0 transition-opacity md:group-hover:opacity-100">
