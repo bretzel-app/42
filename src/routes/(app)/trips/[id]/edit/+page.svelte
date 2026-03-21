@@ -26,6 +26,7 @@
 	let errorMsg = $state('');
 	let showDeleteConfirm = $state(false);
 	let trip = $state<Trip | null>(null);
+	let hasSettlements = $state(false);
 
 	onMount(async () => {
 		try {
@@ -45,6 +46,15 @@
 		loading = false;
 
 		await loadMembers(tripId);
+
+		// Check if settlements exist (locks home currency)
+		try {
+			const res = await fetch(`/api/trips/${tripId}/settlements`);
+			if (res.ok) {
+				const data = await res.json();
+				hasSettlements = data.filter((s: { deleted: boolean }) => !s.deleted).length > 0;
+			}
+		} catch { /* offline */ }
 	});
 
 	async function handleSave(e: Event) {
@@ -147,11 +157,14 @@
 					{/if}
 					<div>
 						<label for="currency" class="mb-1 block text-sm font-medium text-[var(--text)]">Home currency</label>
-						<select id="currency" bind:value={homeCurrency} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]">
+						<select id="currency" bind:value={homeCurrency} disabled={hasSettlements} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)] disabled:opacity-60 disabled:cursor-not-allowed">
 							{#each COMMON_CURRENCIES as c}
 								<option value={c}>{c}</option>
 							{/each}
 						</select>
+						{#if hasSettlements}
+							<p class="mt-1 text-xs" style="color: var(--text-muted);">Currency cannot be changed while settlements exist.</p>
+						{/if}
 					</div>
 				</div>
 
