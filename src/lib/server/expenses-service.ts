@@ -15,6 +15,7 @@ function toExpense(row: typeof expenses.$inferSelect): Expense {
 		categoryId: row.categoryId as Expense['categoryId'],
 		date: row.date,
 		note: row.note,
+		paidByMemberId: row.paidByMemberId ?? null,
 		deleted: row.deleted,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
