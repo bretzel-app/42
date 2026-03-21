@@ -124,6 +124,43 @@ sqlite.exec(`
 		added_by INTEGER NOT NULL REFERENCES users(id),
 		added_at INTEGER NOT NULL
 	);
+
+	CREATE TABLE IF NOT EXISTS trip_members (
+		id TEXT PRIMARY KEY,
+		trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+		name TEXT NOT NULL,
+		user_id INTEGER REFERENCES users(id),
+		added_by INTEGER NOT NULL REFERENCES users(id),
+		deleted INTEGER NOT NULL DEFAULT 0,
+		created_at INTEGER,
+		updated_at INTEGER,
+		version INTEGER NOT NULL DEFAULT 1
+	);
+
+	CREATE TABLE IF NOT EXISTS expense_splits (
+		id TEXT PRIMARY KEY,
+		expense_id TEXT NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+		member_id TEXT NOT NULL REFERENCES trip_members(id),
+		amount INTEGER NOT NULL,
+		deleted INTEGER NOT NULL DEFAULT 0,
+		created_at INTEGER,
+		updated_at INTEGER,
+		version INTEGER NOT NULL DEFAULT 1
+	);
+
+	CREATE TABLE IF NOT EXISTS settlements (
+		id TEXT PRIMARY KEY,
+		trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+		from_member_id TEXT NOT NULL REFERENCES trip_members(id),
+		to_member_id TEXT NOT NULL REFERENCES trip_members(id),
+		amount INTEGER NOT NULL,
+		date INTEGER,
+		note TEXT,
+		deleted INTEGER NOT NULL DEFAULT 0,
+		created_at INTEGER,
+		updated_at INTEGER,
+		version INTEGER NOT NULL DEFAULT 1
+	);
 `);
 
 // Create indexes
@@ -140,7 +177,84 @@ sqlite.exec(`
 	CREATE UNIQUE INDEX IF NOT EXISTS user_preferences_user_key_unique ON user_preferences(user_id, key);
 	CREATE UNIQUE INDEX IF NOT EXISTS trip_collaborators_trip_user_unique ON trip_collaborators(trip_id, user_id);
 	CREATE INDEX IF NOT EXISTS trip_collaborators_user_id_idx ON trip_collaborators(user_id);
+	CREATE INDEX IF NOT EXISTS trip_members_trip_id_idx ON trip_members(trip_id);
+	CREATE INDEX IF NOT EXISTS trip_members_user_id_idx ON trip_members(user_id);
+	CREATE INDEX IF NOT EXISTS expense_splits_expense_id_idx ON expense_splits(expense_id);
+	CREATE INDEX IF NOT EXISTS expense_splits_member_id_idx ON expense_splits(member_id);
+	CREATE INDEX IF NOT EXISTS settlements_trip_id_idx ON settlements(trip_id);
 `);
+
+// Add paid_by_member_id to expenses if not already present
+// SQLite does not support ADD COLUMN IF NOT EXISTS, so we use a try/catch
+try {
+	sqlite.prepare('ALTER TABLE expenses ADD COLUMN paid_by_member_id TEXT').run();
+} catch {
+	// Column already exists — safe to ignore
+}
+
+// Data migration: if trip_members is empty but trip_collaborators has data,
+// migrate collaborators to members (idempotent — only runs once)
+const memberCount = (
+	sqlite.prepare('SELECT COUNT(*) as count FROM trip_members').get() as { count: number }
+).count;
+const collaboratorCount = (
+	sqlite.prepare('SELECT COUNT(*) as count FROM trip_collaborators').get() as { count: number }
+).count;
+
+if (memberCount === 0 && collaboratorCount > 0) {
+	const now = Date.now();
+
+	const insertMember = sqlite.prepare(`
+		INSERT OR IGNORE INTO trip_members (id, trip_id, name, user_id, added_by, deleted, created_at, updated_at, version)
+		VALUES (?, ?, ?, ?, ?, 0, ?, ?, 1)
+	`);
+
+	const getDisplayName = sqlite.prepare('SELECT display_name FROM users WHERE id = ?');
+
+	// Auto-add trip owners as members for trips that have collaborators
+	const tripsWithCollaborators = sqlite
+		.prepare(
+			`SELECT DISTINCT t.id as trip_id, t.user_id
+			FROM trips t
+			INNER JOIN trip_collaborators tc ON tc.trip_id = t.id`
+		)
+		.all() as { trip_id: string; user_id: number }[];
+
+	for (const trip of tripsWithCollaborators) {
+		const owner = getDisplayName.get(trip.user_id) as { display_name: string } | undefined;
+		const ownerName = owner?.display_name || 'Trip Owner';
+		insertMember.run(
+			crypto.randomUUID(),
+			trip.trip_id,
+			ownerName,
+			trip.user_id,
+			trip.user_id,
+			now,
+			now
+		);
+	}
+
+	// Migrate collaborators as members
+	const collaborators = sqlite
+		.prepare(
+			`SELECT tc.trip_id, tc.user_id, tc.added_by, u.display_name
+			FROM trip_collaborators tc
+			INNER JOIN users u ON u.id = tc.user_id`
+		)
+		.all() as { trip_id: string; user_id: number; added_by: number; display_name: string }[];
+
+	for (const collab of collaborators) {
+		insertMember.run(
+			crypto.randomUUID(),
+			collab.trip_id,
+			collab.display_name,
+			collab.user_id,
+			collab.added_by,
+			now,
+			now
+		);
+	}
+}
 
 // Re-enable foreign keys
 sqlite.pragma('foreign_keys = ON');
