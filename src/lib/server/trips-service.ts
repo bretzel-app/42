@@ -8,6 +8,7 @@ import { getSharedTripIds, fetchCollaboratorsForTrips } from './collaborators.js
 function toTrip(row: typeof trips.$inferSelect): Trip {
 	return {
 		id: row.id,
+		userId: row.userId,
 		name: row.name,
 		destination: row.destination,
 		startDate: row.startDate,
