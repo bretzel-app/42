@@ -1,8 +1,8 @@
 import { openDB, deleteDB, type IDBPDatabase } from 'idb';
-import type { Trip, Expense, TripCurrency } from '$lib/types/index.js';
+import type { Trip, Expense, TripCurrency, TripMember, ExpenseSplit, Settlement } from '$lib/types/index.js';
 
 const DB_PREFIX = 'fortytwo';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface FortyTwoDB {
 	trips: {
@@ -27,6 +27,30 @@ interface FortyTwoDB {
 			'by-tripId': string;
 		};
 	};
+	tripMembers: {
+		key: string;
+		value: TripMember;
+		indexes: {
+			'by-tripId': string;
+			'by-updated': Date;
+		};
+	};
+	expenseSplits: {
+		key: string;
+		value: ExpenseSplit;
+		indexes: {
+			'by-expenseId': string;
+			'by-updated': Date;
+		};
+	};
+	settlements: {
+		key: string;
+		value: Settlement;
+		indexes: {
+			'by-tripId': string;
+			'by-updated': Date;
+		};
+	};
 	syncQueue: {
 		key: number;
 		value: SyncQueueItem;
@@ -42,7 +66,7 @@ interface FortyTwoDB {
 
 export interface SyncQueueItem {
 	id?: number;
-	entityType: 'trip' | 'expense' | 'tripCurrency';
+	entityType: 'trip' | 'expense' | 'tripCurrency' | 'tripMember' | 'expenseSplit' | 'settlement';
 	entityId: string;
 	operation: 'create' | 'update' | 'delete';
 	data?: Record<string, unknown>;
@@ -80,6 +104,24 @@ export function getDb(): Promise<IDBPDatabase<FortyTwoDB>> {
 						keyPath: ['tripId', 'currencyCode']
 					});
 					currStore.createIndex('by-tripId', 'tripId');
+				}
+
+				if (!db.objectStoreNames.contains('tripMembers')) {
+					const memberStore = db.createObjectStore('tripMembers', { keyPath: 'id' });
+					memberStore.createIndex('by-tripId', 'tripId');
+					memberStore.createIndex('by-updated', 'updatedAt');
+				}
+
+				if (!db.objectStoreNames.contains('expenseSplits')) {
+					const splitStore = db.createObjectStore('expenseSplits', { keyPath: 'id' });
+					splitStore.createIndex('by-expenseId', 'expenseId');
+					splitStore.createIndex('by-updated', 'updatedAt');
+				}
+
+				if (!db.objectStoreNames.contains('settlements')) {
+					const settlementStore = db.createObjectStore('settlements', { keyPath: 'id' });
+					settlementStore.createIndex('by-tripId', 'tripId');
+					settlementStore.createIndex('by-updated', 'updatedAt');
 				}
 
 				if (!db.objectStoreNames.contains('syncQueue')) {
@@ -162,6 +204,39 @@ export async function getTripCurrencies(tripId: string): Promise<TripCurrency[]>
 export async function putTripCurrency(tc: TripCurrency): Promise<void> {
 	const db = await getDb();
 	await db.put('tripCurrencies', tc);
+}
+
+// TripMember operations
+export async function getMembersByTrip(tripId: string): Promise<TripMember[]> {
+	const db = await getDb();
+	return db.getAllFromIndex('tripMembers', 'by-tripId', tripId);
+}
+
+export async function putMember(member: TripMember): Promise<void> {
+	const db = await getDb();
+	await db.put('tripMembers', member);
+}
+
+// ExpenseSplit operations
+export async function getSplitsByExpense(expenseId: string): Promise<ExpenseSplit[]> {
+	const db = await getDb();
+	return db.getAllFromIndex('expenseSplits', 'by-expenseId', expenseId);
+}
+
+export async function putExpenseSplit(split: ExpenseSplit): Promise<void> {
+	const db = await getDb();
+	await db.put('expenseSplits', split);
+}
+
+// Settlement operations
+export async function getSettlementsByTrip(tripId: string): Promise<Settlement[]> {
+	const db = await getDb();
+	return db.getAllFromIndex('settlements', 'by-tripId', tripId);
+}
+
+export async function putSettlement(settlement: Settlement): Promise<void> {
+	const db = await getDb();
+	await db.put('settlements', settlement);
 }
 
 // Sync queue operations

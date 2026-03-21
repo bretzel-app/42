@@ -50,6 +50,8 @@ export async function createExpense(data: {
 	categoryId: string;
 	date: Date;
 	note?: string;
+	paidByMemberId?: string | null;
+	splits?: Array<{ memberId: string; amount: number }>;
 }): Promise<Expense | null> {
 	const now = new Date();
 	const expense: Expense = {
@@ -61,7 +63,7 @@ export async function createExpense(data: {
 		categoryId: data.categoryId as Expense['categoryId'],
 		date: data.date,
 		note: data.note || '',
-		paidByMemberId: null,
+		paidByMemberId: data.paidByMemberId ?? null,
 		deleted: false,
 		createdAt: now,
 		updatedAt: now,
@@ -75,7 +77,7 @@ export async function createExpense(data: {
 		const res = await fetch(`/api/trips/${data.tripId}/expenses`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(expense)
+			body: JSON.stringify({ ...expense, splits: data.splits })
 		});
 		if (res.ok) {
 			const serverExpense = await res.json();
