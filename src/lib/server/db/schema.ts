@@ -63,6 +63,7 @@ export const expenses = sqliteTable(
 		categoryId: text('category_id').notNull(),
 		date: integer('date', { mode: 'timestamp' }).notNull(),
 		note: text('note').default('').notNull(),
+		paidByMemberId: text('paid_by_member_id'),
 		deleted: integer('deleted', { mode: 'boolean' }).default(false).notNull(),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
@@ -164,4 +165,73 @@ export const userPreferences = sqliteTable(
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 	},
 	(table) => [uniqueIndex('user_preferences_user_key_unique').on(table.userId, table.key)]
+);
+
+export const tripMembers = sqliteTable(
+	'trip_members',
+	{
+		id: text('id').primaryKey(),
+		tripId: text('trip_id')
+			.references(() => trips.id, { onDelete: 'cascade' })
+			.notNull(),
+		name: text('name').notNull(),
+		userId: integer('user_id').references(() => users.id),
+		addedBy: integer('added_by')
+			.references(() => users.id)
+			.notNull(),
+		deleted: integer('deleted').notNull().default(0),
+		createdAt: integer('created_at', { mode: 'timestamp' }),
+		updatedAt: integer('updated_at', { mode: 'timestamp' }),
+		version: integer('version').notNull().default(1)
+	},
+	(table) => [
+		index('trip_members_trip_id_idx').on(table.tripId),
+		index('trip_members_user_id_idx').on(table.userId)
+	]
+);
+
+export const expenseSplits = sqliteTable(
+	'expense_splits',
+	{
+		id: text('id').primaryKey(),
+		expenseId: text('expense_id')
+			.references(() => expenses.id, { onDelete: 'cascade' })
+			.notNull(),
+		memberId: text('member_id')
+			.references(() => tripMembers.id)
+			.notNull(),
+		amount: integer('amount').notNull(),
+		deleted: integer('deleted').notNull().default(0),
+		createdAt: integer('created_at', { mode: 'timestamp' }),
+		updatedAt: integer('updated_at', { mode: 'timestamp' }),
+		version: integer('version').notNull().default(1)
+	},
+	(table) => [
+		index('expense_splits_expense_id_idx').on(table.expenseId),
+		index('expense_splits_member_id_idx').on(table.memberId)
+	]
+);
+
+export const settlements = sqliteTable(
+	'settlements',
+	{
+		id: text('id').primaryKey(),
+		tripId: text('trip_id')
+			.references(() => trips.id, { onDelete: 'cascade' })
+			.notNull(),
+		fromMemberId: text('from_member_id')
+			.references(() => tripMembers.id)
+			.notNull(),
+		toMemberId: text('to_member_id')
+			.references(() => tripMembers.id)
+			.notNull(),
+		amount: integer('amount').notNull(),
+		date: integer('date', { mode: 'timestamp' }),
+		note: text('note'),
+		deleted: integer('deleted').notNull().default(0),
+		createdAt: integer('created_at', { mode: 'timestamp' }),
+		updatedAt: integer('updated_at', { mode: 'timestamp' }),
+		version: integer('version').notNull().default(1)
+	},
+	(table) => [index('settlements_trip_id_idx').on(table.tripId)]
 );

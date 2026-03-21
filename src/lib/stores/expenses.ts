@@ -61,6 +61,7 @@ export async function createExpense(data: {
 		categoryId: data.categoryId as Expense['categoryId'],
 		date: data.date,
 		note: data.note || '',
+		paidByMemberId: null,
 		deleted: false,
 		createdAt: now,
 		updatedAt: now,
