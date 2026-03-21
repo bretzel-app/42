@@ -2,24 +2,25 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { loadExpenses, activeExpenses } from '$lib/stores/expenses.js';
+	import { loadMembers, activeMembers } from '$lib/stores/members.js';
 	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import { formatCents, convertToHomeCurrency } from '$lib/utils/currency.js';
 	import { formatDateRange, tripDurationDays, elapsedDays } from '$lib/utils/dates.js';
 	import { formatNumber } from '$lib/utils/format.js';
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
-	import ShareDialog from '$lib/components/ShareDialog.svelte';
-	import type { Trip, Expense, CategoryId, Collaborator } from '$lib/types/index.js';
+	import type { Trip, Expense, CategoryId, Collaborator, MemberBalance, SuggestedTransfer } from '$lib/types/index.js';
 	import Pencil from 'lucide-svelte/icons/pencil';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Users from 'lucide-svelte/icons/users';
 
 	let trip = $state<Trip | null>(null);
 	let loading = $state(true);
-	let showShare = $state(false);
 	let collaborators = $state<Collaborator[]>([]);
 	let isOwner = $state(true);
 	let ownerName = $state('');
+	let balances = $state<MemberBalance[]>([]);
+	let transfers = $state<SuggestedTransfer[]>([]);
 
 	const tripId = $derived($page.params.id!);
 
@@ -49,7 +50,24 @@
 				collaborators = await collabRes.json();
 			}
 		} catch { /* offline — IDB data stands */ }
-		await loadExpenses(tripId);
+
+		await Promise.all([
+			loadExpenses(tripId),
+			loadMembers(tripId)
+		]);
+
+		// Fetch balances if there are 2+ members
+		if ($activeMembers.length >= 2) {
+			try {
+				const balRes = await fetch(`/api/trips/${tripId}/balances`);
+				if (balRes.ok) {
+					const data = await balRes.json();
+					balances = data.balances ?? [];
+					transfers = data.transfers ?? [];
+				}
+			} catch { /* offline */ }
+		}
+
 		loading = false;
 	});
 
@@ -164,6 +182,15 @@
 			.filter((c) => c.total > 0)
 			.sort((a, b) => b.total - a.total);
 	});
+
+	function getInitials(name: string): string {
+		return name
+			.split(' ')
+			.map((w) => w[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2);
+	}
 </script>
 
 <svelte:head>
@@ -192,17 +219,17 @@
 			</p>
 			<div class="mt-2 flex justify-end gap-2">
 				{#if isOwner}
-					<button
-						onclick={() => (showShare = true)}
+					<a
+						href="/trips/{trip.id}/edit?tab=members"
 						class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-sm text-[var(--text)] hover:border-[var(--primary)]"
-						data-testid="share-trip-btn"
+						data-testid="members-btn"
 					>
 						<Users size={14} />
-						Share
-						{#if collaborators.length > 0}
-							<span class="ml-1 text-xs text-[var(--text-muted)]">({collaborators.length})</span>
+						Members
+						{#if $activeMembers.length > 0}
+							<span class="ml-1 text-xs text-[var(--text-muted)]">({$activeMembers.length})</span>
 						{/if}
-					</button>
+					</a>
 				{:else if collaborators.length > 0}
 					<span class="flex items-center gap-1 rounded-sm border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-muted)]">
 						<Users size={14} />
@@ -227,6 +254,35 @@
 				</a>
 			</div>
 		</div>
+
+		<!-- Sub-navigation (multi-member trips only) -->
+		{#if $activeMembers.length >= 2}
+			<div class="mb-6" style="border-bottom: 1px solid var(--border-subtle);">
+				<div class="flex gap-0">
+					<a
+						href="/trips/{trip.id}"
+						class="px-4 py-2.5 text-[13px] font-medium transition-colors"
+						style="color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -1px;"
+					>
+						Dashboard
+					</a>
+					<a
+						href="/trips/{trip.id}/expenses"
+						class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
+						style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
+					>
+						Expenses
+					</a>
+					<a
+						href="/trips/{trip.id}/balances"
+						class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
+						style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
+					>
+						Balances
+					</a>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Budget gauge -->
 		{#if trip.totalBudget}
@@ -278,6 +334,62 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Group Balances widget (multi-member trips only) -->
+		{#if $activeMembers.length >= 2 && balances.length > 0}
+			<div
+				class="mb-6 rounded-sm overflow-hidden"
+				style="border: 2px solid var(--primary); box-shadow: 2px 2px 0px var(--primary);"
+			>
+				<!-- Header bar -->
+				<div
+					class="flex items-center justify-between px-4 py-2.5"
+					style="background: var(--primary);"
+				>
+					<span class="text-sm font-semibold text-white">Group Balances</span>
+					<a
+						href="/trips/{trip.id}/balances"
+						class="text-xs text-white opacity-90 hover:opacity-100 transition-opacity"
+					>
+						View all →
+					</a>
+				</div>
+				<!-- Balance rows -->
+				<div class="bg-[var(--bg-surface)] divide-y divide-[var(--border-subtle)]">
+					{#each balances as member}
+						<div class="flex items-center gap-3 px-4 py-2.5">
+							<!-- Initials avatar -->
+							<div
+								class="flex shrink-0 items-center justify-center rounded-sm text-xs font-bold text-white"
+								style="width: 28px; height: 28px; background: var(--primary);"
+							>
+								{getInitials(member.memberName)}
+							</div>
+							<span class="flex-1 text-sm text-[var(--text)]">{member.memberName}</span>
+							<span
+								class="text-sm font-medium"
+								style="color: {member.balance >= 0 ? '#5a7a5a' : 'var(--destructive)'};"
+							>
+								{member.balance >= 0 ? '+' : ''}{formatCents(member.balance, trip.homeCurrency)}
+							</span>
+						</div>
+					{/each}
+				</div>
+				<!-- Footer -->
+				<div
+					class="flex items-center justify-between px-4 py-2"
+					style="background: var(--bg-base);"
+				>
+					<a
+						href="/trips/{trip.id}/balances"
+						class="text-xs font-medium transition-colors hover:opacity-80"
+						style="color: var(--primary);"
+					>
+						{transfers.length} {transfers.length === 1 ? 'transfer' : 'transfers'} needed to settle up →
+					</a>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Category breakdown -->
 		{#if categoryTotals().length > 0}
@@ -337,16 +449,6 @@
 			{/if}
 		</div>
 	</div>
-
-	{#if showShare && isOwner}
-		<ShareDialog
-			{tripId}
-			{collaborators}
-			{ownerName}
-			onClose={() => (showShare = false)}
-			onUpdate={(updated) => (collaborators = updated)}
-		/>
-	{/if}
 {:else}
 	<p class="text-sm text-[var(--text-muted)]">Trip not found</p>
 {/if}
