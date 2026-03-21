@@ -8,9 +8,13 @@
 	import { toDateInput, fromDateInput } from '$lib/utils/dates.js';
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
+	import SplitControls from '$lib/components/SplitControls.svelte';
+	import { loadMembers, activeMembers } from '$lib/stores/members.js';
 	import type { Trip, CategoryId } from '$lib/types/index.js';
 
 	const tripId = $derived($page.params.id!);
+	const currentUserId = $derived(($page.data.user?.id as number) ?? 0);
+
 	let trip = $state<Trip | null>(null);
 
 	let amountInput = $state('');
@@ -22,7 +26,19 @@
 	let loading = $state(false);
 	let errorMsg = $state('');
 
+	let paidByMemberId = $state('');
+	let splits = $state<{ memberId: string; amount: number }[]>([]);
+
+	// Default paidByMemberId to the member linked to the current user
+	$effect(() => {
+		const myMember = $activeMembers.find((m) => m.userId === currentUserId);
+		if (myMember && !paidByMemberId) {
+			paidByMemberId = myMember.id;
+		}
+	});
+
 	onMount(async () => {
+		await loadMembers(tripId);
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
@@ -33,6 +49,7 @@
 	});
 
 	const showExchangeRate = $derived(trip && currency !== trip.homeCurrency);
+	const amountCents = $derived(parseToCents(amountInput));
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -52,7 +69,9 @@
 			exchangeRate: showExchangeRate ? exchangeRate : '1',
 			categoryId,
 			date: fromDateInput(date),
-			note: note.trim()
+			note: note.trim(),
+			paidByMemberId: paidByMemberId || null,
+			splits: splits.length > 0 ? splits : undefined
 		});
 		loading = false;
 
@@ -165,6 +184,20 @@
 				data-testid="expense-note-input"
 			/>
 		</div>
+
+		<!-- Split controls (only when 2+ members) -->
+		{#if $activeMembers.length >= 2}
+			<SplitControls
+				amount={amountCents}
+				{currency}
+				members={$activeMembers}
+				{currentUserId}
+				{paidByMemberId}
+				{splits}
+				onPaidByChange={(id) => (paidByMemberId = id)}
+				onSplitsChange={(s) => (splits = s)}
+			/>
+		{/if}
 
 		<div class="flex gap-3 pt-2">
 			<a href="/trips/{tripId}/expenses" class="rounded-sm border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text)] hover:border-[var(--primary)]">Cancel</a>
