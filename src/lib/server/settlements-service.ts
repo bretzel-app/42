@@ -60,11 +60,11 @@ export function createSettlement(data: {
 	return toSettlement(result);
 }
 
-export function deleteSettlement(settlementId: string): boolean {
+export function deleteSettlement(settlementId: string, tripId: string): boolean {
 	const existing = db
 		.select()
 		.from(settlements)
-		.where(eq(settlements.id, settlementId))
+		.where(and(eq(settlements.id, settlementId), eq(settlements.tripId, tripId)))
 		.get();
 	if (!existing) return false;
 

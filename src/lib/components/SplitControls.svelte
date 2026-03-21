@@ -27,6 +27,22 @@
 
 	type SplitMode = 'equal' | 'custom';
 
+	// Detect if incoming splits are custom (non-equal) to preserve them when editing
+	function detectSplitMode(currentSplits: { memberId: string; amount: number }[], currentAmount: number, currentMembers: TripMember[]): SplitMode {
+		if (currentSplits.length === 0) return 'equal';
+		// Check if the splits match an equal distribution
+		const memberIds = currentMembers.map((m) => m.id);
+		const splitMemberIds = currentSplits.map((s) => s.memberId);
+		if (splitMemberIds.length !== memberIds.length) return 'custom';
+		if (!memberIds.every((id) => splitMemberIds.includes(id))) return 'custom';
+		const equalResult = computeEqualSplit(currentAmount, memberIds);
+		for (const s of currentSplits) {
+			if (equalResult[s.memberId] !== s.amount) return 'custom';
+		}
+		return 'equal';
+	}
+
+	let initialized = $state(false);
 	let splitMode = $state<SplitMode>('equal');
 
 	// For equal mode: which members are checked (by id)
@@ -35,20 +51,29 @@
 	// For custom mode: editable inputs keyed by memberId
 	let customAmounts = $state<Record<string, string>>({});
 
-	// Initialise custom amounts from current splits (e.g. when editing)
+	// Initialise split mode and custom amounts from current splits (e.g. when editing)
 	$effect(() => {
-		if (splits.length > 0 && Object.keys(customAmounts).length === 0) {
-			const init: Record<string, string> = {};
-			for (const s of splits) {
-				init[s.memberId] = (s.amount / 100).toFixed(2);
+		if (initialized) return;
+		if (splits.length > 0 && members.length > 0) {
+			splitMode = detectSplitMode(splits, amount, members);
+			if (splitMode === 'custom') {
+				const init: Record<string, string> = {};
+				for (const s of splits) {
+					init[s.memberId] = (s.amount / 100).toFixed(2);
+				}
+				customAmounts = init;
 			}
-			customAmounts = init;
+			// For equal mode, set checked members from existing splits
+			checkedMemberIds = new Set(splits.map((s) => s.memberId));
+			initialized = true;
 		}
 	});
 
-	// Re-init checkedMemberIds when members list changes (e.g. loaded async)
+	// Re-init checkedMemberIds when members list changes (e.g. loaded async), only if not yet initialized
 	$effect(() => {
-		checkedMemberIds = new Set(members.map((m) => m.id));
+		if (!initialized) {
+			checkedMemberIds = new Set(members.map((m) => m.id));
+		}
 	});
 
 	// Recalculate equal splits when amount or checked members change

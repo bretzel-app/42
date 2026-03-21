@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { TripMember } from '$lib/types/index.js';
 import { canAccessTrip } from './collaborators.js';
+import { error } from '@sveltejs/kit';
 
 function toTripMember(row: typeof tripMembers.$inferSelect): TripMember {
 	return {
@@ -50,8 +51,8 @@ export function createMember(
 
 	if (existingCount === 0) {
 		const trip = db.select().from(trips).where(eq(trips.id, data.tripId)).get();
-		if (trip && trip.userId !== addedBy) {
-			// Add the trip owner as first member
+		if (trip && trip.userId !== data.userId) {
+			// Add the trip owner as first member (when the new member is not the owner)
 			const owner = db.select().from(users).where(eq(users.id, trip.userId)).get();
 			if (owner) {
 				db.insert(tripMembers)
@@ -104,10 +105,16 @@ export function createMember(
 
 export function updateMember(
 	memberId: string,
-	data: { name?: string; userId?: number | null }
+	data: { name?: string; userId?: number | null },
+	callerUserId: number
 ): TripMember | null {
 	const existing = db.select().from(tripMembers).where(eq(tripMembers.id, memberId)).get();
 	if (!existing) return null;
+
+	// Verify caller can access the trip this member belongs to
+	if (!canAccessTrip(existing.tripId, callerUserId).canAccess) {
+		throw error(403, 'Not authorized to modify this member');
+	}
 
 	const updates: Record<string, unknown> = {
 		updatedAt: new Date(),

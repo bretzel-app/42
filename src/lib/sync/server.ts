@@ -179,6 +179,11 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 				}
 				case 'expenseSplit': {
 					if (change.operation === 'delete') {
+						// Verify the split belongs to an expense owned by this user
+						const splitRow = tx.select().from(expenseSplits).where(eq(expenseSplits.id, change.entityId)).get();
+						if (!splitRow) break;
+						const expenseRow = tx.select().from(expenses).where(and(eq(expenses.id, splitRow.expenseId), eq(expenses.userId, userId))).get();
+						if (!expenseRow) break;
 						tx.update(expenseSplits)
 							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
 							.where(eq(expenseSplits.id, change.entityId))
@@ -223,6 +228,11 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 				}
 				case 'settlement': {
 					if (change.operation === 'delete') {
+						// Verify the settlement belongs to a trip owned by this user
+						const settlementRow = tx.select().from(settlements).where(eq(settlements.id, change.entityId)).get();
+						if (!settlementRow) break;
+						const tripRow = tx.select().from(trips).where(and(eq(trips.id, settlementRow.tripId), eq(trips.userId, userId))).get();
+						if (!tripRow) break;
 						tx.update(settlements)
 							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
 							.where(eq(settlements.id, change.entityId))
