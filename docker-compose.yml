@@ -11,6 +11,12 @@ services:
       - DATA_DIR=/data
       - DATABASE_URL=/data/42.db
       - ORIGIN=${ORIGIN:-http://localhost:3000}
+      # SMTP (optional — enables email notifications)
+      # - SMTP_HOST=smtp.example.com
+      # - SMTP_PORT=587
+      # - SMTP_USER=
+      # - SMTP_PASS=
+      # - SMTP_FROM=42 <noreply@example.com>
     restart: unless-stopped
 
 volumes:

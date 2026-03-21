@@ -2,8 +2,9 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { requireAdmin } from '$lib/server/api-utils.js';
 import { getUser, deleteUser, updateUserRole, resetPassword, revokeAllSessions } from '$lib/server/auth.js';
+import { isEmailConfigured, sendPasswordResetEmail, sendRoleChangedEmail } from '$lib/server/email.js';
 
-export const PATCH: RequestHandler = async ({ params, request, ...event }) => {
+export const PATCH: RequestHandler = async ({ params, request, url, ...event }) => {
 	const admin = requireAdmin(event);
 	const userId = parseInt(params.id, 10);
 	const body = await request.json();
@@ -16,6 +17,9 @@ export const PATCH: RequestHandler = async ({ params, request, ...event }) => {
 			throw error(400, 'Cannot change your own role');
 		}
 		updateUserRole(userId, body.role);
+		if (isEmailConfigured()) {
+			sendRoleChangedEmail(user.email, user.displayName, body.role, url.origin).catch(() => {});
+		}
 	}
 
 	if (body.newPassword !== undefined) {
@@ -23,6 +27,9 @@ export const PATCH: RequestHandler = async ({ params, request, ...event }) => {
 			throw error(400, 'Password must be at least 8 characters');
 		}
 		await resetPassword(userId, body.newPassword);
+		if (isEmailConfigured()) {
+			sendPasswordResetEmail(user.email, user.displayName, url.origin).catch(() => {});
+		}
 	}
 
 	if (body.revokeSessions) {

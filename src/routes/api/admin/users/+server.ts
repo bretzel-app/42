@@ -2,13 +2,14 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types.js';
 import { requireAdmin } from '$lib/server/api-utils.js';
 import { listUsers, createUser } from '$lib/server/auth.js';
+import { isEmailConfigured, sendWelcomeEmail } from '$lib/server/email.js';
 
 export const GET: RequestHandler = async (event) => {
 	requireAdmin(event);
 	return json(listUsers());
 };
 
-export const POST: RequestHandler = async ({ request, ...event }) => {
+export const POST: RequestHandler = async ({ request, url, ...event }) => {
 	requireAdmin(event);
 	const { email, displayName, password, role } = await request.json();
 
@@ -21,5 +22,10 @@ export const POST: RequestHandler = async ({ request, ...event }) => {
 	}
 
 	const user = await createUser(email, displayName || email.split('@')[0], password || null, role || 'user');
+
+	if (isEmailConfigured()) {
+		sendWelcomeEmail(user.email, user.displayName, url.origin).catch(() => {});
+	}
+
 	return json(user, { status: 201 });
 };
