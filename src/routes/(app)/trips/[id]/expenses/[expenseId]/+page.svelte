@@ -8,11 +8,14 @@
 	import { toDateInput, fromDateInput } from '$lib/utils/dates.js';
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
-	import type { Trip, Expense, CategoryId } from '$lib/types/index.js';
+	import SplitControls from '$lib/components/SplitControls.svelte';
+	import { loadMembers, activeMembers } from '$lib/stores/members.js';
+	import type { Trip, Expense, CategoryId, ExpenseSplit } from '$lib/types/index.js';
 	import { getTrip, putTrip, getExpensesByTrip } from '$lib/sync/idb.js';
 
 	const tripId = $derived($page.params.id!);
 	const expenseId = $derived($page.params.expenseId!);
+	const currentUserId = $derived(($page.data.user?.id as number) ?? 0);
 
 	let trip = $state<Trip | null>(null);
 	let amountInput = $state('');
@@ -25,16 +28,51 @@
 	let saving = $state(false);
 	let errorMsg = $state('');
 
-	function populateFromExpense(expense: Expense) {
+	let paidByMemberId = $state('');
+	let splits = $state<{ memberId: string; amount: number }[]>([]);
+
+	// Track the original amount to detect changes in edit mode
+	let originalAmount = $state(0);
+	let splitsResetByAmountChange = $state(false);
+
+	function populateFromExpense(expense: Expense & { splits?: ExpenseSplit[] }) {
 		amountInput = formatAmount(expense.amount);
+		originalAmount = expense.amount;
 		currency = expense.currency;
 		exchangeRate = expense.exchangeRate;
 		categoryId = expense.categoryId;
 		date = toDateInput(expense.date);
 		note = expense.note;
+		paidByMemberId = expense.paidByMemberId ?? '';
+		if (expense.splits && expense.splits.length > 0) {
+			splits = expense.splits.map((s) => ({ memberId: s.memberId, amount: s.amount }));
+		}
 	}
 
+	// When amount changes in edit mode, reset splits to equal and notify
+	const amountCents = $derived(parseToCents(amountInput));
+
+	$effect(() => {
+		// Only trigger reset if we already have splits loaded and amount changed from original
+		if (originalAmount > 0 && amountCents !== originalAmount && splits.length > 0 && !splitsResetByAmountChange) {
+			splitsResetByAmountChange = true;
+			showToast('Split has been reset to equal', 'info');
+		}
+	});
+
+	// Default paidByMemberId to the member linked to the current user (if not already set from expense)
+	$effect(() => {
+		if (!paidByMemberId) {
+			const myMember = $activeMembers.find((m) => m.userId === currentUserId);
+			if (myMember) {
+				paidByMemberId = myMember.id;
+			}
+		}
+	});
+
 	onMount(async () => {
+		await loadMembers(tripId);
+
 		// Load from IDB first for instant offline display
 		try {
 			const idbTrip = await getTrip(tripId);
@@ -55,7 +93,7 @@
 				try { await putTrip(trip!); } catch { /* IDB unavailable */ }
 			}
 			if (expensesRes.ok) {
-				const allExpenses: Expense[] = await expensesRes.json();
+				const allExpenses: (Expense & { splits?: ExpenseSplit[] })[] = await expensesRes.json();
 				const expense = allExpenses.find((e) => e.id === expenseId);
 				if (expense) populateFromExpense(expense);
 			}
@@ -77,7 +115,9 @@
 			exchangeRate: showExchangeRate ? exchangeRate : '1',
 			categoryId,
 			date: fromDateInput(date),
-			note: note.trim()
+			note: note.trim(),
+			paidByMemberId: paidByMemberId || null,
+			splits: splits.length > 0 ? splits : undefined
 		});
 		saving = false;
 		showToast('Expense updated', 'success');
@@ -153,6 +193,20 @@
 				<label for="note" class="mb-1 block text-sm font-medium text-[var(--text)]">Note (optional)</label>
 				<input id="note" type="text" bind:value={note} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]" />
 			</div>
+
+			<!-- Split controls (only when 2+ members) -->
+			{#if $activeMembers.length >= 2}
+				<SplitControls
+					amount={amountCents}
+					{currency}
+					members={$activeMembers}
+					{currentUserId}
+					{paidByMemberId}
+					{splits}
+					onPaidByChange={(id) => (paidByMemberId = id)}
+					onSplitsChange={(s) => (splits = s)}
+				/>
+			{/if}
 
 			<div class="flex items-center justify-between pt-2">
 				<button type="button" onclick={handleDelete} class="text-sm text-[var(--destructive)] hover:underline">Delete</button>

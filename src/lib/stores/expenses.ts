@@ -98,7 +98,11 @@ export async function createExpense(data: {
 	return expense;
 }
 
-export async function updateExpense(tripId: string, id: string, data: Partial<Expense>): Promise<void> {
+export async function updateExpense(
+	tripId: string,
+	id: string,
+	data: Partial<Expense> & { splits?: Array<{ memberId: string; amount: number }> }
+): Promise<void> {
 	const now = new Date();
 	const updates = { ...data, updatedAt: now };
 
