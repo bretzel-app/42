@@ -32,6 +32,7 @@ export interface Expense {
 	categoryId: CategoryId;
 	date: Date;
 	note: string;
+	paidByMemberId: string | null; // null = untracked (legacy)
 	deleted: boolean;
 	createdAt: Date;
 	updatedAt: Date;
@@ -55,8 +56,63 @@ export interface User {
 	createdAt: Date;
 }
 
+export interface TripMember {
+	id: string;
+	tripId: string;
+	name: string;
+	userId: number | null;
+	addedBy: number;
+	deleted: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+	version: number;
+}
+
+export interface ExpenseSplit {
+	id: string;
+	expenseId: string;
+	memberId: string;
+	amount: number; // cents in expense currency
+	deleted: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+	version: number;
+}
+
+export interface Settlement {
+	id: string;
+	tripId: string;
+	fromMemberId: string;
+	toMemberId: string;
+	amount: number; // cents in home currency
+	date: Date;
+	note: string;
+	deleted: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+	version: number;
+}
+
+export interface MemberBalance {
+	memberId: string;
+	memberName: string;
+	totalPaid: number; // cents, home currency
+	totalOwed: number; // cents, home currency
+	settlementsSent: number; // cents
+	settlementsReceived: number; // cents
+	balance: number; // positive = still owed money, negative = still owes money
+}
+
+export interface SuggestedTransfer {
+	fromMemberId: string;
+	fromName: string;
+	toMemberId: string;
+	toName: string;
+	amount: number; // cents, home currency
+}
+
 export interface SyncChange {
-	entityType: 'trip' | 'expense' | 'tripCurrency';
+	entityType: 'trip' | 'expense' | 'tripCurrency' | 'tripMember' | 'expenseSplit' | 'settlement';
 	entityId: string;
 	operation: 'create' | 'update' | 'delete';
 	timestamp: number;
