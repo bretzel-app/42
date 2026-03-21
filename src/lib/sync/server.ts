@@ -1,6 +1,14 @@
 import type { Db } from '$lib/server/db/index.js';
-import { trips, expenses, tripCurrencies, syncLog } from '$lib/server/db/schema.js';
-import { eq, gt, and } from 'drizzle-orm';
+import {
+	trips,
+	expenses,
+	tripCurrencies,
+	tripMembers,
+	expenseSplits,
+	settlements,
+	syncLog
+} from '$lib/server/db/schema.js';
+import { eq, gt, and, inArray } from 'drizzle-orm';
 import type { SyncQueueItem } from './idb.js';
 
 export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: number): Promise<void> {
@@ -119,6 +127,147 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 					}
 					break;
 				}
+				case 'tripMember': {
+					if (change.operation === 'delete') {
+						// Verify the member belongs to a trip owned by this user
+						const member = tx.select().from(tripMembers).where(eq(tripMembers.id, change.entityId)).get();
+						if (!member) break;
+						const trip = tx.select().from(trips).where(and(eq(trips.id, member.tripId), eq(trips.userId, userId))).get();
+						if (!trip) break;
+						tx.update(tripMembers)
+							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
+							.where(eq(tripMembers.id, change.entityId))
+							.run();
+					} else if (change.data) {
+						const tripId = change.data.tripId as string;
+						// Verify trip ownership
+						const trip = tx.select().from(trips).where(and(eq(trips.id, tripId), eq(trips.userId, userId))).get();
+						if (!trip) continue;
+
+						const existing = tx.select().from(tripMembers).where(eq(tripMembers.id, change.entityId)).get();
+						if (existing) {
+							const existingUpdatedAt = existing.updatedAt ? existing.updatedAt.getTime() : 0;
+							if (change.timestamp > existingUpdatedAt) {
+								const updates: Record<string, unknown> = {
+									updatedAt: new Date(change.timestamp),
+									version: existing.version + 1
+								};
+								for (const [key, value] of Object.entries(change.data)) {
+									if (key !== 'id' && key !== 'tripId' && key !== 'addedBy' && key !== 'createdAt') {
+										updates[key] = value;
+									}
+								}
+								tx.update(tripMembers).set(updates).where(eq(tripMembers.id, change.entityId)).run();
+							}
+						} else if (change.operation === 'create') {
+							tx.insert(tripMembers)
+								.values({
+									id: change.entityId,
+									tripId,
+									name: (change.data.name as string) || '',
+									userId: (change.data.userId as number) ?? null,
+									addedBy: userId,
+									deleted: 0,
+									createdAt: new Date(change.timestamp),
+									updatedAt: new Date(change.timestamp),
+									version: 1
+								})
+								.run();
+						}
+					}
+					break;
+				}
+				case 'expenseSplit': {
+					if (change.operation === 'delete') {
+						tx.update(expenseSplits)
+							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
+							.where(eq(expenseSplits.id, change.entityId))
+							.run();
+					} else if (change.data) {
+						const expenseId = change.data.expenseId as string;
+						// Verify the expense belongs to a trip owned by this user
+						const expense = tx.select().from(expenses).where(and(eq(expenses.id, expenseId), eq(expenses.userId, userId))).get();
+						if (!expense) continue;
+
+						const existing = tx.select().from(expenseSplits).where(eq(expenseSplits.id, change.entityId)).get();
+						if (existing) {
+							const existingUpdatedAt = existing.updatedAt ? existing.updatedAt.getTime() : 0;
+							if (change.timestamp > existingUpdatedAt) {
+								const updates: Record<string, unknown> = {
+									updatedAt: new Date(change.timestamp),
+									version: existing.version + 1
+								};
+								for (const [key, value] of Object.entries(change.data)) {
+									if (key !== 'id' && key !== 'expenseId' && key !== 'createdAt') {
+										updates[key] = value;
+									}
+								}
+								tx.update(expenseSplits).set(updates).where(eq(expenseSplits.id, change.entityId)).run();
+							}
+						} else if (change.operation === 'create') {
+							tx.insert(expenseSplits)
+								.values({
+									id: change.entityId,
+									expenseId,
+									memberId: change.data.memberId as string,
+									amount: change.data.amount as number,
+									deleted: 0,
+									createdAt: new Date(change.timestamp),
+									updatedAt: new Date(change.timestamp),
+									version: 1
+								})
+								.run();
+						}
+					}
+					break;
+				}
+				case 'settlement': {
+					if (change.operation === 'delete') {
+						tx.update(settlements)
+							.set({ deleted: 1, updatedAt: new Date(change.timestamp) })
+							.where(eq(settlements.id, change.entityId))
+							.run();
+					} else if (change.data) {
+						const tripId = change.data.tripId as string;
+						// Verify trip ownership
+						const trip = tx.select().from(trips).where(and(eq(trips.id, tripId), eq(trips.userId, userId))).get();
+						if (!trip) continue;
+
+						const existing = tx.select().from(settlements).where(eq(settlements.id, change.entityId)).get();
+						if (existing) {
+							const existingUpdatedAt = existing.updatedAt ? existing.updatedAt.getTime() : 0;
+							if (change.timestamp > existingUpdatedAt) {
+								const updates: Record<string, unknown> = {
+									updatedAt: new Date(change.timestamp),
+									version: existing.version + 1
+								};
+								for (const [key, value] of Object.entries(change.data)) {
+									if (key !== 'id' && key !== 'tripId' && key !== 'createdAt') {
+										updates[key] = value;
+									}
+								}
+								tx.update(settlements).set(updates).where(eq(settlements.id, change.entityId)).run();
+							}
+						} else if (change.operation === 'create') {
+							tx.insert(settlements)
+								.values({
+									id: change.entityId,
+									tripId,
+									fromMemberId: change.data.fromMemberId as string,
+									toMemberId: change.data.toMemberId as string,
+									amount: change.data.amount as number,
+									date: change.data.date ? new Date(change.data.date as number) : null,
+									note: (change.data.note as string) || null,
+									deleted: 0,
+									createdAt: new Date(change.timestamp),
+									updatedAt: new Date(change.timestamp),
+									version: 1
+								})
+								.run();
+						}
+					}
+					break;
+				}
 			}
 
 			tx.insert(syncLog)
@@ -165,9 +314,52 @@ export async function getChangesSince(db: Db, sinceTimestamp: number, userId: nu
 			});
 	}
 
+	// Get all trip IDs accessible to the user (owned trips)
+	const allUserTrips = db.select({ id: trips.id }).from(trips).where(eq(trips.userId, userId)).all();
+	const allUserTripIds = allUserTrips.map((t) => t.id);
+
+	let changedMembers: typeof tripMembers.$inferSelect[] = [];
+	let changedSplits: typeof expenseSplits.$inferSelect[] = [];
+	let changedSettlements: typeof settlements.$inferSelect[] = [];
+
+	if (allUserTripIds.length > 0) {
+		// Trip members changed since timestamp, for user's trips
+		changedMembers = db
+			.select()
+			.from(tripMembers)
+			.where(and(inArray(tripMembers.tripId, allUserTripIds), gt(tripMembers.updatedAt, since)))
+			.all();
+
+		// Settlements changed since timestamp, for user's trips
+		changedSettlements = db
+			.select()
+			.from(settlements)
+			.where(and(inArray(settlements.tripId, allUserTripIds), gt(settlements.updatedAt, since)))
+			.all();
+
+		// Expense splits: get changed expenses in user's trips, then find splits for those expenses
+		const allUserExpenses = db
+			.select({ id: expenses.id })
+			.from(expenses)
+			.where(inArray(expenses.tripId, allUserTripIds))
+			.all();
+		const allUserExpenseIds = allUserExpenses.map((e) => e.id);
+
+		if (allUserExpenseIds.length > 0) {
+			changedSplits = db
+				.select()
+				.from(expenseSplits)
+				.where(and(inArray(expenseSplits.expenseId, allUserExpenseIds), gt(expenseSplits.updatedAt, since)))
+				.all();
+		}
+	}
+
 	return {
 		trips: changedTrips,
 		expenses: changedExpenses,
-		tripCurrencies: changedCurrencies
+		tripCurrencies: changedCurrencies,
+		tripMembers: changedMembers,
+		expenseSplits: changedSplits,
+		settlements: changedSettlements
 	};
 }
