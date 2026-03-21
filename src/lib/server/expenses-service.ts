@@ -1,9 +1,15 @@
 import { db } from './db/index.js';
-import { expenses, trips } from './db/schema.js';
+import { expenses, expenseSplits } from './db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import type { Expense } from '$lib/types/index.js';
+import type { Expense, ExpenseSplit } from '$lib/types/index.js';
 import { canAccessTrip } from './collaborators.js';
+import { error } from '@sveltejs/kit';
+
+interface SplitInput {
+	memberId: string;
+	amount: number;
+}
 
 function toExpense(row: typeof expenses.$inferSelect): Expense {
 	return {
@@ -23,28 +29,81 @@ function toExpense(row: typeof expenses.$inferSelect): Expense {
 	};
 }
 
+function toExpenseSplit(row: typeof expenseSplits.$inferSelect): ExpenseSplit {
+	return {
+		id: row.id,
+		expenseId: row.expenseId,
+		memberId: row.memberId,
+		amount: row.amount,
+		deleted: row.deleted === 1,
+		createdAt: row.createdAt ?? new Date(),
+		updatedAt: row.updatedAt ?? new Date(),
+		version: row.version
+	};
+}
+
 function verifyTripAccess(tripId: string, userId: number): boolean {
 	return canAccessTrip(tripId, userId).canAccess;
 }
 
-export function listExpenses(tripId: string, userId: number): Expense[] {
+export function listExpenses(tripId: string, userId: number): (Expense & { splits: ExpenseSplit[] })[] {
 	if (!verifyTripAccess(tripId, userId)) return [];
-	return db
+
+	const expenseRows = db
 		.select()
 		.from(expenses)
 		.where(and(eq(expenses.tripId, tripId), eq(expenses.deleted, false)))
+		.all();
+
+	if (expenseRows.length === 0) return [];
+
+	const expenseIds = expenseRows.map((e) => e.id);
+
+	// Fetch all active splits for these expenses
+	const splitRows = db
+		.select()
+		.from(expenseSplits)
+		.where(and(
+			eq(expenseSplits.deleted, 0)
+		))
 		.all()
-		.map(toExpense);
+		.filter((s) => expenseIds.includes(s.expenseId));
+
+	// Group splits by expenseId
+	const splitsByExpenseId = new Map<string, ExpenseSplit[]>();
+	for (const split of splitRows) {
+		const existing = splitsByExpenseId.get(split.expenseId) ?? [];
+		existing.push(toExpenseSplit(split));
+		splitsByExpenseId.set(split.expenseId, existing);
+	}
+
+	return expenseRows.map((row) => ({
+		...toExpense(row),
+		splits: splitsByExpenseId.get(row.id) ?? []
+	}));
 }
 
-export function createExpense(data: Expense, userId: number): Expense | null {
+export function createExpense(
+	data: Expense & { splits?: SplitInput[] },
+	userId: number
+): Expense | null {
 	if (!verifyTripAccess(data.tripId, userId)) return null;
 
 	const now = new Date();
+	const id = data.id || randomUUID();
+
+	// Validate splits before inserting expense
+	if (data.paidByMemberId && data.splits?.length) {
+		const splitTotal = data.splits.reduce((sum, s) => sum + s.amount, 0);
+		if (splitTotal !== data.amount) {
+			error(400, 'Split amounts must equal expense amount');
+		}
+	}
+
 	const result = db
 		.insert(expenses)
 		.values({
-			id: data.id || randomUUID(),
+			id,
 			tripId: data.tripId,
 			userId,
 			amount: data.amount,
@@ -53,6 +112,7 @@ export function createExpense(data: Expense, userId: number): Expense | null {
 			categoryId: data.categoryId,
 			date: new Date(data.date),
 			note: data.note || '',
+			paidByMemberId: data.paidByMemberId ?? null,
 			deleted: false,
 			createdAt: now,
 			updatedAt: now,
@@ -60,13 +120,31 @@ export function createExpense(data: Expense, userId: number): Expense | null {
 		})
 		.returning()
 		.get();
+
+	if (data.paidByMemberId && data.splits?.length) {
+		for (const split of data.splits) {
+			db.insert(expenseSplits)
+				.values({
+					id: randomUUID(),
+					expenseId: id,
+					memberId: split.memberId,
+					amount: split.amount,
+					deleted: 0,
+					createdAt: now,
+					updatedAt: now,
+					version: 1
+				})
+				.run();
+		}
+	}
+
 	return toExpense(result);
 }
 
 export function updateExpense(
 	id: string,
 	tripId: string,
-	data: Partial<Expense>,
+	data: Partial<Expense> & { splits?: SplitInput[] },
 	userId: number
 ): Expense | null {
 	if (!verifyTripAccess(tripId, userId)) return null;
@@ -85,6 +163,7 @@ export function updateExpense(
 	if (data.categoryId !== undefined) updates.categoryId = data.categoryId;
 	if (data.date !== undefined) updates.date = new Date(data.date);
 	if (data.note !== undefined) updates.note = data.note;
+	if ('paidByMemberId' in data) updates.paidByMemberId = data.paidByMemberId ?? null;
 
 	const result = db
 		.update(expenses)
@@ -92,6 +171,49 @@ export function updateExpense(
 		.where(eq(expenses.id, id))
 		.returning()
 		.get();
+
+	if (data.splits !== undefined) {
+		const now = new Date();
+		const effectiveAmount = (data.amount !== undefined ? data.amount : existing.amount);
+
+		if (data.splits.length > 0) {
+			const splitTotal = data.splits.reduce((sum, s) => sum + s.amount, 0);
+			if (splitTotal !== effectiveAmount) {
+				error(400, 'Split amounts must equal expense amount');
+			}
+		}
+
+		// Soft-delete existing splits
+		const existingSplits = db
+			.select()
+			.from(expenseSplits)
+			.where(and(eq(expenseSplits.expenseId, id), eq(expenseSplits.deleted, 0)))
+			.all();
+
+		for (const split of existingSplits) {
+			db.update(expenseSplits)
+				.set({ deleted: 1, updatedAt: now, version: split.version + 1 })
+				.where(eq(expenseSplits.id, split.id))
+				.run();
+		}
+
+		// Insert new splits
+		for (const split of data.splits) {
+			db.insert(expenseSplits)
+				.values({
+					id: randomUUID(),
+					expenseId: id,
+					memberId: split.memberId,
+					amount: split.amount,
+					deleted: 0,
+					createdAt: now,
+					updatedAt: now,
+					version: 1
+				})
+				.run();
+		}
+	}
+
 	return result ? toExpense(result) : null;
 }
 
