@@ -1,9 +1,9 @@
 import { db } from './db/index.js';
-import { trips, expenses, tripCurrencies, tripCollaborators, users } from './db/schema.js';
+import { trips, expenses, tripCurrencies, tripMembers, users } from './db/schema.js';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { Trip } from '$lib/types/index.js';
-import { getSharedTripIds, fetchCollaboratorsForTrips } from './collaborators.js';
+import { getSharedTripIds } from './collaborators.js';
 
 function toTrip(row: typeof trips.$inferSelect): Trip {
 	return {
@@ -73,19 +73,15 @@ export function listTripsWithTotals(userId: number): (Trip & { totalSpent: numbe
 		: [];
 
 	const allRows = [...ownedRows, ...sharedRows];
-	const allTripIds = allRows.map((r) => r.trip.id);
-	const collabMap = fetchCollaboratorsForTrips(allTripIds);
 
 	return allRows.map((r) => {
 		const isOwner = r.trip.userId === userId;
-		const collaborators = collabMap.get(r.trip.id) || [];
 		return {
 			...toTrip(r.trip),
 			totalSpent: Number(r.totalSpent),
 			expenseCount: Number(r.expenseCount),
 			isOwner,
-			isShared: collaborators.length > 0,
-			collaborators
+			isShared: !isOwner
 		};
 	});
 }
@@ -100,13 +96,13 @@ export function getTrip(id: string, userId: number): (Trip & { isOwner: boolean 
 
 	const isOwner = row.userId === userId;
 	if (!isOwner) {
-		// Check collaborator access
-		const collab = db
+		// Check member access
+		const member = db
 			.select()
-			.from(tripCollaborators)
-			.where(and(eq(tripCollaborators.tripId, id), eq(tripCollaborators.userId, userId)))
+			.from(tripMembers)
+			.where(and(eq(tripMembers.tripId, id), eq(tripMembers.userId, userId), eq(tripMembers.deleted, 0)))
 			.get();
-		if (!collab) return null;
+		if (!member) return null;
 	}
 
 	return { ...toTrip(row), isOwner };
