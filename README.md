@@ -41,6 +41,21 @@ docker compose up -d
 
 Open http://localhost:3000 and create your admin account on first visit.
 
+#### With Email Notifications (optional)
+
+Add SMTP settings to enable email notifications (welcome emails, trip invitations, security alerts):
+
+```yaml
+environment:
+  - SMTP_HOST=smtp.example.com
+  - SMTP_PORT=587
+  - SMTP_USER=your-username
+  - SMTP_PASS=your-password
+  - SMTP_FROM=42 <noreply@example.com>
+```
+
+Auto-enabled when `SMTP_HOST` is set. All sends are best-effort and never block API responses.
+
 ### Manual (Node.js)
 
 ```bash
@@ -73,8 +88,23 @@ pnpm build         # Production build
 - Six built-in categories: Food, Accommodation, Transport, Activities, Shopping, Misc
 - Multi-currency support with per-trip exchange rate management
 - PWA — installable, works offline via IndexedDB + LWW CRDT sync
+- Email notifications for account creation and trip invitations (optional SMTP)
 - Multi-user auth (Argon2) with admin/user roles
 - Docker deployment with a single command
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NODE_ENV` | `development` | Set to `production` for deployments |
+| `DATA_DIR` | `./data` | Directory for SQLite database and files |
+| `DATABASE_URL` | `./data/42.db` | Path to the SQLite database |
+| `ORIGIN` | `http://localhost:3000` | Public URL of the app |
+| `SMTP_HOST` | *(empty)* | SMTP server hostname — setting this enables email notifications |
+| `SMTP_PORT` | `587` | SMTP port (`587` for STARTTLS, `465` for SSL) |
+| `SMTP_USER` | *(empty)* | SMTP username (optional for unauthenticated relays) |
+| `SMTP_PASS` | *(empty)* | SMTP password |
+| `SMTP_FROM` | `42 <noreply@localhost>` | Sender address for outgoing emails |
 
 ## Tech Stack
 
