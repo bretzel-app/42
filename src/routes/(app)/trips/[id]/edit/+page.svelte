@@ -6,9 +6,13 @@
 	import { showToast } from '$lib/stores/toast.js';
 	import { COMMON_CURRENCIES, parseToCents, formatAmount } from '$lib/utils/currency.js';
 	import { toDateInput, fromDateInput } from '$lib/utils/dates.js';
+	import { activeMembers, loadMembers } from '$lib/stores/members.js';
+	import MembersList from '$lib/components/MembersList.svelte';
 	import type { Trip } from '$lib/types/index.js';
 
 	const tripId = $derived($page.params.id!);
+
+	let tab = $state<'details' | 'currencies' | 'members'>('details');
 
 	let name = $state('');
 	let destination = $state('');
@@ -21,22 +25,26 @@
 	let saving = $state(false);
 	let errorMsg = $state('');
 	let showDeleteConfirm = $state(false);
+	let trip = $state<Trip | null>(null);
 
 	onMount(async () => {
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
-				const trip: Trip = await res.json();
-				name = trip.name;
-				destination = trip.destination;
-				startDate = toDateInput(trip.startDate);
-				endDate = toDateInput(trip.endDate);
-				numberOfPeople = trip.numberOfPeople;
-				budgetInput = trip.totalBudget ? formatAmount(trip.totalBudget) : '';
-				homeCurrency = trip.homeCurrency;
+				const fetched: Trip = await res.json();
+				trip = fetched;
+				name = fetched.name;
+				destination = fetched.destination;
+				startDate = toDateInput(fetched.startDate);
+				endDate = toDateInput(fetched.endDate);
+				numberOfPeople = fetched.numberOfPeople;
+				budgetInput = fetched.totalBudget ? formatAmount(fetched.totalBudget) : '';
+				homeCurrency = fetched.homeCurrency;
 			}
 		} catch { /* offline */ }
 		loading = false;
+
+		await loadMembers(tripId);
 	});
 
 	async function handleSave(e: Event) {
@@ -79,79 +87,111 @@
 	<div class="mx-auto max-w-lg pb-8">
 		<h2 class="mb-6 text-xl font-bold text-[var(--text)]">Edit Trip</h2>
 
-		<form onsubmit={handleSave} class="space-y-4">
-			{#if errorMsg}
-				<div class="rounded-sm border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
-					{errorMsg}
+		<!-- Tab bar -->
+		<div class="mb-6 flex border-b border-[var(--border-subtle)]">
+			{#each [{ key: 'details', label: 'Details' }, { key: 'currencies', label: 'Currencies' }, { key: 'members', label: 'Members' }] as t}
+				<button
+					onclick={() => (tab = t.key as 'details' | 'currencies' | 'members')}
+					class="relative px-4 py-2 text-sm transition-colors {tab === t.key ? 'font-medium text-[var(--primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text)]'}"
+				>
+					{t.label}
+					{#if tab === t.key}
+						<span class="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--primary)]"></span>
+					{/if}
+				</button>
+			{/each}
+		</div>
+
+		{#if tab === 'details'}
+			<form onsubmit={handleSave} class="space-y-4">
+				{#if errorMsg}
+					<div class="rounded-sm border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
+						{errorMsg}
+					</div>
+				{/if}
+
+				<div>
+					<label for="name" class="mb-1 block text-sm font-medium text-[var(--text)]">Trip name *</label>
+					<input id="name" type="text" bind:value={name} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" required data-testid="trip-name-input" />
+				</div>
+
+				<div>
+					<label for="destination" class="mb-1 block text-sm font-medium text-[var(--text)]">Destination</label>
+					<input id="destination" type="text" bind:value={destination} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
+				</div>
+
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label for="start-date" class="mb-1 block text-sm font-medium text-[var(--text)]">Start date</label>
+						<input id="start-date" type="date" bind:value={startDate} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
+					</div>
+					<div>
+						<label for="end-date" class="mb-1 block text-sm font-medium text-[var(--text)]">End date</label>
+						<input id="end-date" type="date" bind:value={endDate} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4">
+					{#if $activeMembers.length >= 2}
+						<div>
+							<p class="mb-1 text-sm font-medium text-[var(--text)]">Travelers</p>
+							<p class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text-muted)]">
+								Managed via Members tab
+							</p>
+						</div>
+					{:else}
+						<div>
+							<label for="people" class="mb-1 block text-sm font-medium text-[var(--text)]">Travelers</label>
+							<input id="people" type="number" min="1" bind:value={numberOfPeople} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
+						</div>
+					{/if}
+					<div>
+						<label for="currency" class="mb-1 block text-sm font-medium text-[var(--text)]">Home currency</label>
+						<select id="currency" bind:value={homeCurrency} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]">
+							{#each COMMON_CURRENCIES as c}
+								<option value={c}>{c}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+
+				<div>
+					<label for="budget" class="mb-1 block text-sm font-medium text-[var(--text)]">Budget (optional)</label>
+					<input id="budget" type="text" inputmode="decimal" bind:value={budgetInput} placeholder="e.g. 2000.00" class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]" />
+				</div>
+
+				<div class="flex items-center justify-between pt-2">
+					<button
+						type="button"
+						onclick={() => (showDeleteConfirm = !showDeleteConfirm)}
+						class="text-sm text-[var(--destructive)] hover:underline"
+					>
+						Delete trip
+					</button>
+					<div class="flex gap-3">
+						<a href="/trips/{tripId}" class="rounded-sm border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text)] hover:border-[var(--primary)]">Cancel</a>
+						<button type="submit" disabled={saving} class="rounded-sm bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50" data-testid="trip-save-btn">
+							{saving ? 'Saving...' : 'Save'}
+						</button>
+					</div>
+				</div>
+			</form>
+
+			{#if showDeleteConfirm}
+				<div class="mt-4 rounded-sm border border-[var(--error-border)] bg-[var(--error-bg)] p-4">
+					<p class="mb-3 text-sm text-[var(--error-text)]">This will permanently delete this trip and all its expenses.</p>
+					<div class="flex gap-3">
+						<button onclick={() => (showDeleteConfirm = false)} class="rounded-sm border border-[var(--border-subtle)] px-4 py-2 text-sm text-[var(--text)]">Cancel</button>
+						<button onclick={handleDelete} class="rounded-sm bg-[var(--destructive)] px-4 py-2 text-sm font-medium text-white hover:opacity-90" data-testid="confirm-delete-btn">Confirm delete</button>
+					</div>
 				</div>
 			{/if}
-
-			<div>
-				<label for="name" class="mb-1 block text-sm font-medium text-[var(--text)]">Trip name *</label>
-				<input id="name" type="text" bind:value={name} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" required data-testid="trip-name-input" />
-			</div>
-
-			<div>
-				<label for="destination" class="mb-1 block text-sm font-medium text-[var(--text)]">Destination</label>
-				<input id="destination" type="text" bind:value={destination} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
-			</div>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<label for="start-date" class="mb-1 block text-sm font-medium text-[var(--text)]">Start date</label>
-					<input id="start-date" type="date" bind:value={startDate} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
-				</div>
-				<div>
-					<label for="end-date" class="mb-1 block text-sm font-medium text-[var(--text)]">End date</label>
-					<input id="end-date" type="date" bind:value={endDate} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
-				</div>
-			</div>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<label for="people" class="mb-1 block text-sm font-medium text-[var(--text)]">Travelers</label>
-					<input id="people" type="number" min="1" bind:value={numberOfPeople} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]" />
-				</div>
-				<div>
-					<label for="currency" class="mb-1 block text-sm font-medium text-[var(--text)]">Home currency</label>
-					<select id="currency" bind:value={homeCurrency} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]">
-						{#each COMMON_CURRENCIES as c}
-							<option value={c}>{c}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-
-			<div>
-				<label for="budget" class="mb-1 block text-sm font-medium text-[var(--text)]">Budget (optional)</label>
-				<input id="budget" type="text" inputmode="decimal" bind:value={budgetInput} placeholder="e.g. 2000.00" class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]" />
-			</div>
-
-			<div class="flex items-center justify-between pt-2">
-				<button
-					type="button"
-					onclick={() => (showDeleteConfirm = !showDeleteConfirm)}
-					class="text-sm text-[var(--destructive)] hover:underline"
-				>
-					Delete trip
-				</button>
-				<div class="flex gap-3">
-					<a href="/trips/{tripId}" class="rounded-sm border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text)] hover:border-[var(--primary)]">Cancel</a>
-					<button type="submit" disabled={saving} class="rounded-sm bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50" data-testid="trip-save-btn">
-						{saving ? 'Saving...' : 'Save'}
-					</button>
-				</div>
-			</div>
-		</form>
-
-		{#if showDeleteConfirm}
-			<div class="mt-4 rounded-sm border border-[var(--error-border)] bg-[var(--error-bg)] p-4">
-				<p class="mb-3 text-sm text-[var(--error-text)]">This will permanently delete this trip and all its expenses.</p>
-				<div class="flex gap-3">
-					<button onclick={() => (showDeleteConfirm = false)} class="rounded-sm border border-[var(--border-subtle)] px-4 py-2 text-sm text-[var(--text)]">Cancel</button>
-					<button onclick={handleDelete} class="rounded-sm bg-[var(--destructive)] px-4 py-2 text-sm font-medium text-white hover:opacity-90" data-testid="confirm-delete-btn">Confirm delete</button>
-				</div>
-			</div>
+		{:else if tab === 'currencies'}
+			<p class="text-sm text-[var(--text-muted)]">Currency management coming soon.</p>
+		{:else if tab === 'members'}
+			{#if trip}
+				<MembersList {tripId} ownerId={trip.userId} />
+			{/if}
 		{/if}
 	</div>
 {/if}
