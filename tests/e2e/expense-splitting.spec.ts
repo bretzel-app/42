@@ -88,12 +88,12 @@ test.describe('Expense Splitting', () => {
 			await page.getByTestId('add-expense-btn').click();
 			await page.waitForURL(/\/expenses\/new/);
 
-			// Wait for split controls to load
+			// Wait for split controls to load (owner + Carol + Dave = 3 members)
 			await expect(page.getByText('Paid by')).toBeVisible({ timeout: 10000 });
-			await page.getByTestId('expense-amount-input').fill('100');
+			await page.getByTestId('expense-amount-input').fill('90');
 
-			// Then equal split shows 50.00 per member
-			await expect(page.getByText('50.00').first()).toBeVisible({ timeout: 10000 });
+			// Then equal split shows 30.00 per member (90 / 3 = 30.00)
+			await expect(page.getByText('30.00').first()).toBeVisible({ timeout: 10000 });
 		});
 
 		// Scenario: Balances reflect who owes whom
