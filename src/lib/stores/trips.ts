@@ -55,6 +55,7 @@ export async function createTrip(data: {
 	const now = new Date();
 	const trip: Trip = {
 		id: uuid(),
+		userId: 0, // placeholder; overwritten by server response
 		name: data.name,
 		destination: data.destination || '',
 		startDate: data.startDate,
