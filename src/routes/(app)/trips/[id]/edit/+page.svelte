@@ -24,6 +24,7 @@
 	let numberOfPeople = $state(1);
 	let budgetInput = $state('');
 	let homeCurrency = $state('EUR');
+	let splitExpenses = $state(true);
 	let loading = $state(true);
 	let saving = $state(false);
 	let errorMsg = $state('');
@@ -44,6 +45,7 @@
 				numberOfPeople = fetched.numberOfPeople;
 				budgetInput = fetched.totalBudget ? formatAmount(fetched.totalBudget) : '';
 				homeCurrency = fetched.homeCurrency;
+				splitExpenses = fetched.splitExpenses ?? true;
 			}
 		} catch { /* offline */ }
 		loading = false;
@@ -76,7 +78,8 @@
 			endDate: fromDateInput(endDate),
 			numberOfPeople,
 			totalBudget: budget,
-			homeCurrency
+			homeCurrency,
+			splitExpenses
 		});
 		saving = false;
 		showToast('Trip updated', 'success');
@@ -175,6 +178,19 @@
 					<label for="budget" class="mb-1 block text-sm font-medium text-[var(--text)]">Budget (optional)</label>
 					<input id="budget" type="text" inputmode="decimal" bind:value={budgetInput} placeholder="e.g. 2000.00" class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]" />
 				</div>
+
+				<label class="flex items-start gap-3 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={splitExpenses}
+						class="mt-0.5 h-4 w-4"
+						data-testid="split-expenses-toggle"
+					/>
+					<div>
+						<span class="text-sm font-medium text-[var(--text)]">Track group expenses</span>
+						<p class="text-xs text-[var(--text-muted)]">Split costs between members and track who owes what</p>
+					</div>
+				</label>
 
 				<div class="flex items-center justify-between pt-2">
 					<button
