@@ -8,6 +8,7 @@ export interface Trip {
 	numberOfPeople: number;
 	totalBudget: number | null; // cents
 	homeCurrency: string;
+	splitExpenses: boolean;
 	deleted: boolean;
 	createdAt: Date;
 	updatedAt: Date;
