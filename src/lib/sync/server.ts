@@ -50,6 +50,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									numberOfPeople: (change.data.numberOfPeople as number) || 1,
 									totalBudget: (change.data.totalBudget as number) ?? null,
 									homeCurrency: (change.data.homeCurrency as string) || 'EUR',
+									splitExpenses: (change.data.splitExpenses as boolean) ?? true,
 									deleted: false,
 									createdAt: new Date(change.timestamp),
 									updatedAt: new Date(change.timestamp),
