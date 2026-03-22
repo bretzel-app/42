@@ -52,6 +52,7 @@ sqlite.exec(`
 		number_of_people INTEGER NOT NULL DEFAULT 1,
 		total_budget INTEGER,
 		home_currency TEXT NOT NULL DEFAULT 'EUR',
+		split_expenses INTEGER NOT NULL DEFAULT 1,
 		deleted INTEGER NOT NULL DEFAULT 0,
 		created_at INTEGER NOT NULL,
 		updated_at INTEGER NOT NULL,
@@ -188,6 +189,13 @@ sqlite.exec(`
 // SQLite does not support ADD COLUMN IF NOT EXISTS, so we use a try/catch
 try {
 	sqlite.prepare('ALTER TABLE expenses ADD COLUMN paid_by_member_id TEXT').run();
+} catch {
+	// Column already exists — safe to ignore
+}
+
+// Add split_expenses to trips if not already present
+try {
+	sqlite.prepare('ALTER TABLE trips ADD COLUMN split_expenses INTEGER NOT NULL DEFAULT 1').run();
 } catch {
 	// Column already exists — safe to ignore
 }

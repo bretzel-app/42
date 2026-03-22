@@ -177,5 +177,28 @@ test.describe('Expense Splitting', () => {
 			await expect(page.getByText('Iris')).toBeVisible();
 			await expect(page.getByText('Jack')).toBeVisible();
 		});
+
+		// Scenario: Disabling group expenses hides split controls and balances
+		test('Scenario: Disabling split expenses hides all splitting UI', async ({
+			authenticatedPage: page
+		}) => {
+			// Given a trip with two members
+			await createTripWithMembers(page, 'No Split Trip', 'Vienna', ['Leo', 'Mia']);
+
+			// When the user disables group expenses in trip settings
+			const detailsTab = page.getByRole('button', { name: 'Details' });
+			await detailsTab.click();
+			await page.getByTestId('split-expenses-toggle').uncheck();
+			await page.getByTestId('trip-save-btn').click();
+			await page.waitForURL(/\/trips\/[^/]+$/);
+
+			// Then the dashboard does not show the Balances tab
+			await expect(page.getByRole('link', { name: 'Balances' })).not.toBeVisible();
+
+			// And the expense form does not show split controls
+			await page.getByTestId('add-expense-btn').click();
+			await page.waitForURL(/\/expenses\/new/);
+			await expect(page.getByText('Paid by')).not.toBeVisible();
+		});
 	});
 });
