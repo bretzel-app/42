@@ -16,6 +16,7 @@ function toTrip(row: typeof trips.$inferSelect): Trip {
 		numberOfPeople: row.numberOfPeople,
 		totalBudget: row.totalBudget,
 		homeCurrency: row.homeCurrency,
+		splitExpenses: row.splitExpenses,
 		deleted: row.deleted,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
@@ -132,6 +133,7 @@ export function createTrip(data: Trip, userId: number): Trip {
 			numberOfPeople: data.numberOfPeople || 1,
 			totalBudget: data.totalBudget,
 			homeCurrency: data.homeCurrency || 'EUR',
+			splitExpenses: data.splitExpenses ?? true,
 			deleted: false,
 			createdAt: now,
 			updatedAt: now,
@@ -166,6 +168,7 @@ export function updateTrip(
 	if (data.numberOfPeople !== undefined) updates.numberOfPeople = data.numberOfPeople;
 	if (data.totalBudget !== undefined) updates.totalBudget = data.totalBudget;
 	if (data.homeCurrency !== undefined) updates.homeCurrency = data.homeCurrency;
+	if (data.splitExpenses !== undefined) updates.splitExpenses = data.splitExpenses;
 
 	const result = db
 		.update(trips)
