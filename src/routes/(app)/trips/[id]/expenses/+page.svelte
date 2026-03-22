@@ -114,13 +114,15 @@
 				>
 					Expenses
 				</a>
-				<a
-					href="/trips/{tripId}/balances"
-					class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
-					style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
-				>
-					Balances
-				</a>
+				{#if trip?.splitExpenses !== false}
+					<a
+						href="/trips/{tripId}/balances"
+						class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
+						style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
+					>
+						Balances
+					</a>
+				{/if}
 			</div>
 		</div>
 	{/if}
@@ -160,7 +162,7 @@
 									{#if expense.note}
 										<p class="truncate text-xs text-[var(--text-muted)]">{expense.note}</p>
 									{/if}
-									{#if expense.paidByMemberId && memberMap.get(expense.paidByMemberId)}
+									{#if trip?.splitExpenses !== false && expense.paidByMemberId && memberMap.get(expense.paidByMemberId)}
 										<p class="text-[11px]" style="color: var(--text-muted);">
 											Paid by {memberMap.get(expense.paidByMemberId)}
 										</p>
