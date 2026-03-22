@@ -50,7 +50,7 @@
 		]);
 
 		// Fetch balances if there are 2+ members
-		if ($activeMembers.length >= 2) {
+		if ($activeMembers.length >= 2 && trip?.splitExpenses !== false) {
 			try {
 				const balRes = await fetch(`/api/trips/${tripId}/balances`);
 				if (balRes.ok) {
@@ -259,13 +259,15 @@
 					>
 						Expenses
 					</a>
-					<a
-						href="/trips/{trip.id}/balances"
-						class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
-						style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
-					>
-						Balances
-					</a>
+					{#if trip.splitExpenses !== false}
+						<a
+							href="/trips/{trip.id}/balances"
+							class="px-4 py-2.5 text-[13px] transition-colors hover:text-[var(--text)]"
+							style="color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;"
+						>
+							Balances
+						</a>
+					{/if}
 				</div>
 			</div>
 		{/if}
@@ -322,7 +324,7 @@
 		</div>
 
 		<!-- Group Balances widget (multi-member trips only) -->
-		{#if $activeMembers.length >= 2 && balances.length > 0}
+		{#if $activeMembers.length >= 2 && trip.splitExpenses !== false && balances.length > 0}
 			<div
 				class="mb-6 rounded-sm overflow-hidden"
 				style="border: 2px solid var(--primary); box-shadow: 2px 2px 0px var(--primary);"
