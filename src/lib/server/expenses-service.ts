@@ -4,6 +4,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { Expense, ExpenseSplit } from '$lib/types/index.js';
 import { canAccessTrip } from './collaborators.js';
+import { getTrip } from './trips-service.js';
 import { error } from '@sveltejs/kit';
 
 interface SplitInput {
@@ -86,6 +87,13 @@ export function createExpense(
 ): Expense | null {
 	if (!verifyTripAccess(data.tripId, userId)) return null;
 
+	// Strip split data if trip has splitting disabled
+	const trip = getTrip(data.tripId, userId);
+	if (trip?.splitExpenses === false) {
+		data.paidByMemberId = null;
+		data.splits = undefined;
+	}
+
 	const now = new Date();
 	const id = data.id || randomUUID();
 
@@ -145,6 +153,12 @@ export function updateExpense(
 	userId: number
 ): Expense | null {
 	if (!verifyTripAccess(tripId, userId)) return null;
+
+	const trip = getTrip(tripId, userId);
+	if (trip?.splitExpenses === false) {
+		data.paidByMemberId = null;
+		data.splits = undefined;
+	}
 
 	const existing = db
 		.select()
