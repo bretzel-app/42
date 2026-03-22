@@ -51,6 +51,7 @@ export async function createTrip(data: {
 	numberOfPeople?: number;
 	totalBudget?: number | null;
 	homeCurrency?: string;
+	splitExpenses?: boolean;
 }): Promise<Trip | null> {
 	const now = new Date();
 	const trip: Trip = {
@@ -63,6 +64,7 @@ export async function createTrip(data: {
 		numberOfPeople: data.numberOfPeople || 1,
 		totalBudget: data.totalBudget ?? null,
 		homeCurrency: data.homeCurrency || 'EUR',
+		splitExpenses: data.splitExpenses ?? true,
 		deleted: false,
 		createdAt: now,
 		updatedAt: now,
