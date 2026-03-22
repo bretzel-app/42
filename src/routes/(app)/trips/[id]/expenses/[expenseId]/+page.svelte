@@ -194,8 +194,8 @@
 				<input id="note" type="text" bind:value={note} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]" />
 			</div>
 
-			<!-- Split controls (only when 2+ members) -->
-			{#if $activeMembers.length >= 2}
+			<!-- Split controls (only when 2+ members and splitExpenses enabled) -->
+			{#if $activeMembers.length >= 2 && trip?.splitExpenses !== false}
 				<SplitControls
 					amount={amountCents}
 					{currency}

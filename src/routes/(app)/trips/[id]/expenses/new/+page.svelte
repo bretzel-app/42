@@ -185,8 +185,8 @@
 			/>
 		</div>
 
-		<!-- Split controls (only when 2+ members) -->
-		{#if $activeMembers.length >= 2}
+		<!-- Split controls (only when 2+ members and splitExpenses enabled) -->
+		{#if $activeMembers.length >= 2 && trip?.splitExpenses !== false}
 			<SplitControls
 				amount={amountCents}
 				{currency}
