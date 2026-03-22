@@ -36,6 +36,7 @@ export const trips = sqliteTable(
 		numberOfPeople: integer('number_of_people').notNull().default(1),
 		totalBudget: integer('total_budget'),
 		homeCurrency: text('home_currency').notNull().default('EUR'),
+		splitExpenses: integer('split_expenses', { mode: 'boolean' }).default(true).notNull(),
 		deleted: integer('deleted', { mode: 'boolean' }).default(false).notNull(),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
