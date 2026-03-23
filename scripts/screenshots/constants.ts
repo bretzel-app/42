@@ -8,5 +8,5 @@ export const MOBILE_VIEWPORT = { width: 390, height: 844 };
 export const ADMIN = {
 	email: 'admin@bretzel.app',
 	displayName: 'Bretzel Admin',
-	password: 'bretzel2026!'
+	password: crypto.randomUUID()
 };

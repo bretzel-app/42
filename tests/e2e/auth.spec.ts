@@ -1,4 +1,8 @@
 import { test, expect, setupAndLogin } from './helpers/fixtures.js';
+import { readFileSync } from 'fs';
+import { TEST_CREDENTIALS_FILE } from './global-setup';
+
+const { userPassword } = JSON.parse(readFileSync(TEST_CREDENTIALS_FILE, 'utf-8'));
 
 test.describe.serial('Authentication', () => {
 	test('Scenario: Unauthenticated user is prompted to set up or log in', async ({ page }) => {
@@ -81,7 +85,7 @@ test.describe('Multi-user', () => {
 			data: {
 				email: 'user2@test.com',
 				displayName: 'User Two',
-				password: 'userpassword123',
+				password: userPassword,
 				role: 'user'
 			}
 		});
