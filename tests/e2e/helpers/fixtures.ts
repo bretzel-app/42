@@ -1,8 +1,12 @@
 import { test as base, expect, type Page, type Locator } from '@playwright/test';
+import { readFileSync } from 'fs';
 import { collectCoverage } from './coverage';
+import { TEST_CREDENTIALS_FILE } from '../global-setup';
+
+const { testPassword } = JSON.parse(readFileSync(TEST_CREDENTIALS_FILE, 'utf-8'));
 
 const TEST_EMAIL = 'admin@test.com';
-const TEST_PASSWORD = 'testpassword123';
+const TEST_PASSWORD = testPassword;
 const TEST_DISPLAY_NAME = 'Test Admin';
 
 /** Find a specific trip card by its name text */
