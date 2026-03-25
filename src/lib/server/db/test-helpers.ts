@@ -19,6 +19,7 @@ export function createTestDb() {
 			role TEXT NOT NULL DEFAULT 'user',
 			password_hash TEXT,
 			auth_provider TEXT NOT NULL DEFAULT 'password',
+			provider_id TEXT,
 			created_at INTEGER NOT NULL
 		);
 

@@ -29,6 +29,7 @@ sqlite.exec(`
 		role TEXT NOT NULL DEFAULT 'user',
 		password_hash TEXT,
 		auth_provider TEXT NOT NULL DEFAULT 'password',
+		provider_id TEXT,
 		created_at INTEGER NOT NULL
 	);
 
@@ -184,6 +185,13 @@ sqlite.exec(`
 	CREATE INDEX IF NOT EXISTS expense_splits_member_id_idx ON expense_splits(member_id);
 	CREATE INDEX IF NOT EXISTS settlements_trip_id_idx ON settlements(trip_id);
 `);
+
+// Add provider_id to users if not already present (OAuth support)
+try {
+	sqlite.prepare('ALTER TABLE users ADD COLUMN provider_id TEXT').run();
+} catch {
+	// Column already exists — safe to ignore
+}
 
 // Add paid_by_member_id to expenses if not already present
 // SQLite does not support ADD COLUMN IF NOT EXISTS, so we use a try/catch
