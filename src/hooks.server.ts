@@ -7,7 +7,8 @@ const PUBLIC_PATHS = [
 	'/login',
 	'/setup',
 	'/api/auth/login',
-	'/api/auth/setup'
+	'/api/auth/setup',
+	'/api/auth/oauth'
 ];
 
 export const handle: Handle = async ({ event, resolve }) => {
