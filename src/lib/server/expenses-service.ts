@@ -12,6 +12,20 @@ interface SplitInput {
 	amount: number;
 }
 
+/** Sanitize latitude/longitude: must be finite numbers in valid ranges, both set or both null. */
+function sanitizeCoords(lat: unknown, lng: unknown): { latitude: number | null; longitude: number | null } {
+	const latNum = typeof lat === 'number' ? lat : Number(lat);
+	const lngNum = typeof lng === 'number' ? lng : Number(lng);
+	if (
+		Number.isFinite(latNum) && Number.isFinite(lngNum) &&
+		latNum >= -90 && latNum <= 90 &&
+		lngNum >= -180 && lngNum <= 180
+	) {
+		return { latitude: latNum, longitude: lngNum };
+	}
+	return { latitude: null, longitude: null };
+}
+
 function toExpense(row: typeof expenses.$inferSelect): Expense {
 	return {
 		id: row.id,
@@ -120,8 +134,7 @@ export function createExpense(
 			date: new Date(data.date),
 			note: data.note || '',
 			paidByMemberId: data.paidByMemberId ?? null,
-			latitude: data.latitude ?? null,
-			longitude: data.longitude ?? null,
+			...sanitizeCoords(data.latitude, data.longitude),
 			deleted: false,
 			createdAt: now,
 			updatedAt: now,
@@ -179,8 +192,11 @@ export function updateExpense(
 	if (data.date !== undefined) updates.date = new Date(data.date);
 	if (data.note !== undefined) updates.note = data.note;
 	if ('paidByMemberId' in data) updates.paidByMemberId = data.paidByMemberId ?? null;
-	if (data.latitude !== undefined) updates.latitude = data.latitude;
-	if (data.longitude !== undefined) updates.longitude = data.longitude;
+	if (data.latitude !== undefined || data.longitude !== undefined) {
+		const coords = sanitizeCoords(data.latitude, data.longitude);
+		updates.latitude = coords.latitude;
+		updates.longitude = coords.longitude;
+	}
 
 	const result = db
 		.update(expenses)

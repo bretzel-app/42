@@ -12,6 +12,15 @@ import { eq, gt, and, inArray } from 'drizzle-orm';
 import type { SyncQueueItem } from './idb.js';
 import { getSharedTripIds } from '$lib/server/collaborators.js';
 
+function sanitizeCoords(lat: unknown, lng: unknown): { latitude: number | null; longitude: number | null } {
+	const latNum = typeof lat === 'number' ? lat : Number(lat);
+	const lngNum = typeof lng === 'number' ? lng : Number(lng);
+	if (Number.isFinite(latNum) && Number.isFinite(lngNum) && latNum >= -90 && latNum <= 90 && lngNum >= -180 && lngNum <= 180) {
+		return { latitude: latNum, longitude: lngNum };
+	}
+	return { latitude: null, longitude: null };
+}
+
 export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: number): Promise<void> {
 	db.transaction((tx) => {
 		for (const change of changes) {
@@ -77,9 +86,14 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									version: existing.version + 1
 								};
 								for (const [key, value] of Object.entries(change.data)) {
-									if (key !== 'id' && key !== 'userId' && key !== 'createdAt') {
+									if (key !== 'id' && key !== 'userId' && key !== 'createdAt' && key !== 'latitude' && key !== 'longitude') {
 										updates[key] = value;
 									}
+								}
+								if ('latitude' in change.data || 'longitude' in change.data) {
+									const coords = sanitizeCoords(change.data.latitude, change.data.longitude);
+									updates.latitude = coords.latitude;
+									updates.longitude = coords.longitude;
 								}
 								tx.update(expenses).set(updates).where(eq(expenses.id, change.entityId)).run();
 							}
@@ -95,8 +109,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									categoryId: (change.data.categoryId as string) || 'misc',
 									date: new Date(change.data.date as number),
 									note: (change.data.note as string) || '',
-									latitude: (change.data.latitude as number) ?? null,
-									longitude: (change.data.longitude as number) ?? null,
+									...sanitizeCoords(change.data.latitude, change.data.longitude),
 									deleted: false,
 									createdAt: new Date(change.timestamp),
 									updatedAt: new Date(change.timestamp),
