@@ -3,7 +3,7 @@
   "info": {
     "title": "42 API",
     "description": "Auto-generated API spec for 42",
-    "version": "0.9.0",
+    "version": "0.14.0",
     "contact": {
       "name": "Bretzel",
       "url": "https://bretzel.app"
@@ -131,6 +131,50 @@
                 "type": "object"
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/oauth/{provider}": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/auth/oauth/{provider}/callback": {
+      "parameters": [
+        {
+          "name": "provider",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }

@@ -14,6 +14,7 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Pencil from 'lucide-svelte/icons/pencil';
+	import MapPin from 'lucide-svelte/icons/map-pin';
 
 	const tripId = $derived($page.params.id!);
 	let trip = $state<Trip | null>(null);
@@ -166,6 +167,18 @@
 										<p class="text-[11px]" style="color: var(--text-muted);">
 											Paid by {memberMap.get(expense.paidByMemberId)}
 										</p>
+									{/if}
+									{#if expense.latitude != null && expense.longitude != null}
+										<a
+											href="https://www.openstreetmap.org/?mlat={expense.latitude}&mlon={expense.longitude}#map=16/{expense.latitude}/{expense.longitude}"
+											target="_blank"
+											rel="noopener noreferrer"
+											class="inline-flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--primary)]"
+											onclick={(e) => e.stopPropagation()}
+										>
+											<MapPin size={10} />
+											Map
+										</a>
 									{/if}
 								</div>
 								<div class="flex items-center gap-1 max-md:opacity-100 md:opacity-0 transition-opacity md:group-hover:opacity-100">
