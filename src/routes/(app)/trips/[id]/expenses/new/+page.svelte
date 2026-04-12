@@ -9,6 +9,7 @@
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
 	import SplitControls from '$lib/components/SplitControls.svelte';
+	import LocationCapture from '$lib/components/LocationCapture.svelte';
 	import { loadMembers, activeMembers } from '$lib/stores/members.js';
 	import type { Trip, CategoryId } from '$lib/types/index.js';
 
@@ -25,6 +26,8 @@
 	let note = $state('');
 	let loading = $state(false);
 	let errorMsg = $state('');
+	let latitude = $state<number | null>(null);
+	let longitude = $state<number | null>(null);
 
 	let paidByMemberId = $state('');
 	let splits = $state<{ memberId: string; amount: number }[]>([]);
@@ -71,6 +74,8 @@
 			date: fromDateInput(date),
 			note: note.trim(),
 			paidByMemberId: paidByMemberId || null,
+			latitude,
+			longitude,
 			splits: splits.length > 0 ? splits : undefined
 		});
 		loading = false;
@@ -184,6 +189,9 @@
 				data-testid="expense-note-input"
 			/>
 		</div>
+
+		<!-- Location (optional) -->
+		<LocationCapture bind:latitude bind:longitude />
 
 		<!-- Split controls (only when 2+ members and splitExpenses enabled) -->
 		{#if $activeMembers.length >= 2 && trip?.splitExpenses !== false}

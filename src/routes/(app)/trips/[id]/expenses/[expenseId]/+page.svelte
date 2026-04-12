@@ -9,6 +9,7 @@
 	import { CATEGORIES } from '$lib/types/categories.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
 	import SplitControls from '$lib/components/SplitControls.svelte';
+	import LocationCapture from '$lib/components/LocationCapture.svelte';
 	import { loadMembers, activeMembers } from '$lib/stores/members.js';
 	import type { Trip, Expense, CategoryId, ExpenseSplit } from '$lib/types/index.js';
 	import { getTrip, putTrip, getExpensesByTrip } from '$lib/sync/idb.js';
@@ -27,6 +28,8 @@
 	let loading = $state(true);
 	let saving = $state(false);
 	let errorMsg = $state('');
+	let latitude = $state<number | null>(null);
+	let longitude = $state<number | null>(null);
 
 	let paidByMemberId = $state('');
 	let splits = $state<{ memberId: string; amount: number }[]>([]);
@@ -44,6 +47,8 @@
 		date = toDateInput(expense.date);
 		note = expense.note;
 		paidByMemberId = expense.paidByMemberId ?? '';
+		latitude = expense.latitude ?? null;
+		longitude = expense.longitude ?? null;
 		if (expense.splits && expense.splits.length > 0) {
 			splits = expense.splits.map((s) => ({ memberId: s.memberId, amount: s.amount }));
 		}
@@ -117,6 +122,8 @@
 			date: fromDateInput(date),
 			note: note.trim(),
 			paidByMemberId: paidByMemberId || null,
+			latitude,
+			longitude,
 			splits: splits.length > 0 ? splits : undefined
 		});
 		saving = false;
@@ -193,6 +200,9 @@
 				<label for="note" class="mb-1 block text-sm font-medium text-[var(--text)]">Note (optional)</label>
 				<input id="note" type="text" bind:value={note} class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]" />
 			</div>
+
+			<!-- Location (optional) -->
+			<LocationCapture bind:latitude bind:longitude />
 
 			<!-- Split controls (only when 2+ members and splitExpenses enabled) -->
 			{#if $activeMembers.length >= 2 && trip?.splitExpenses !== false}

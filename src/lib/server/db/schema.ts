@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
@@ -66,6 +66,8 @@ export const expenses = sqliteTable(
 		date: integer('date', { mode: 'timestamp' }).notNull(),
 		note: text('note').default('').notNull(),
 		paidByMemberId: text('paid_by_member_id'),
+		latitude: real('latitude'),
+		longitude: real('longitude'),
 		deleted: integer('deleted', { mode: 'boolean' }).default(false).notNull(),
 		createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 		updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),

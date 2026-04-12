@@ -51,6 +51,8 @@ export async function createExpense(data: {
 	date: Date;
 	note?: string;
 	paidByMemberId?: string | null;
+	latitude?: number | null;
+	longitude?: number | null;
 	splits?: Array<{ memberId: string; amount: number }>;
 }): Promise<Expense | null> {
 	const now = new Date();
@@ -64,6 +66,8 @@ export async function createExpense(data: {
 		date: data.date,
 		note: data.note || '',
 		paidByMemberId: data.paidByMemberId ?? null,
+		latitude: data.latitude ?? null,
+		longitude: data.longitude ?? null,
 		deleted: false,
 		createdAt: now,
 		updatedAt: now,
