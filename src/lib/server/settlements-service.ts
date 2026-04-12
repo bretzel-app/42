@@ -118,6 +118,8 @@ export function getBalances(tripId: string): {
 		date: row.date,
 		note: row.note,
 		paidByMemberId: row.paidByMemberId ?? null,
+		latitude: row.latitude ?? null,
+		longitude: row.longitude ?? null,
 		deleted: Boolean(row.deleted),
 		createdAt: row.createdAt ?? new Date(),
 		updatedAt: row.updatedAt ?? new Date(),

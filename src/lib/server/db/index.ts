@@ -70,6 +70,8 @@ sqlite.exec(`
 		category_id TEXT NOT NULL,
 		date INTEGER NOT NULL,
 		note TEXT NOT NULL DEFAULT '',
+		latitude REAL,
+		longitude REAL,
 		deleted INTEGER NOT NULL DEFAULT 0,
 		created_at INTEGER NOT NULL,
 		updated_at INTEGER NOT NULL,
@@ -204,6 +206,18 @@ try {
 // Add split_expenses to trips if not already present
 try {
 	sqlite.prepare('ALTER TABLE trips ADD COLUMN split_expenses INTEGER NOT NULL DEFAULT 1').run();
+} catch {
+	// Column already exists — safe to ignore
+}
+
+// Add geolocation columns to expenses if not already present
+try {
+	sqlite.prepare('ALTER TABLE expenses ADD COLUMN latitude REAL').run();
+} catch {
+	// Column already exists — safe to ignore
+}
+try {
+	sqlite.prepare('ALTER TABLE expenses ADD COLUMN longitude REAL').run();
 } catch {
 	// Column already exists — safe to ignore
 }

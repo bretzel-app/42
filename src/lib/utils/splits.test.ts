@@ -37,6 +37,8 @@ function makeExpense(
 		date: new Date(),
 		note: '',
 		paidByMemberId,
+		latitude: null,
+		longitude: null,
 		deleted: false,
 		createdAt: new Date(),
 		updatedAt: new Date(),

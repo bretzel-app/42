@@ -27,6 +27,8 @@ export interface Expense {
 	date: Date;
 	note: string;
 	paidByMemberId: string | null; // null = untracked (legacy)
+	latitude: number | null;
+	longitude: number | null;
 	deleted: boolean;
 	createdAt: Date;
 	updatedAt: Date;

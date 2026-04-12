@@ -23,6 +23,8 @@ function toExpense(row: typeof expenses.$inferSelect): Expense {
 		date: row.date,
 		note: row.note,
 		paidByMemberId: row.paidByMemberId ?? null,
+		latitude: row.latitude ?? null,
+		longitude: row.longitude ?? null,
 		deleted: row.deleted,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
@@ -118,6 +120,8 @@ export function createExpense(
 			date: new Date(data.date),
 			note: data.note || '',
 			paidByMemberId: data.paidByMemberId ?? null,
+			latitude: data.latitude ?? null,
+			longitude: data.longitude ?? null,
 			deleted: false,
 			createdAt: now,
 			updatedAt: now,
@@ -175,6 +179,8 @@ export function updateExpense(
 	if (data.date !== undefined) updates.date = new Date(data.date);
 	if (data.note !== undefined) updates.note = data.note;
 	if ('paidByMemberId' in data) updates.paidByMemberId = data.paidByMemberId ?? null;
+	if (data.latitude !== undefined) updates.latitude = data.latitude;
+	if (data.longitude !== undefined) updates.longitude = data.longitude;
 
 	const result = db
 		.update(expenses)

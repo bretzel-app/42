@@ -95,6 +95,8 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									categoryId: (change.data.categoryId as string) || 'misc',
 									date: new Date(change.data.date as number),
 									note: (change.data.note as string) || '',
+									latitude: (change.data.latitude as number) ?? null,
+									longitude: (change.data.longitude as number) ?? null,
 									deleted: false,
 									createdAt: new Date(change.timestamp),
 									updatedAt: new Date(change.timestamp),
