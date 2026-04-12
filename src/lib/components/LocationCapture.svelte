@@ -56,7 +56,7 @@
 			>
 				{latitude.toFixed(5)}, {longitude.toFixed(5)}
 			</a>
-			<button type="button" onclick={clearLocation} class="ml-auto shrink-0 text-[var(--text-muted)] hover:text-[var(--destructive)]">
+			<button type="button" onclick={clearLocation} aria-label="Clear location" class="ml-auto shrink-0 text-[var(--text-muted)] hover:text-[var(--destructive)]">
 				<X size={14} />
 			</button>
 		</div>
