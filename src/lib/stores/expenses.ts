@@ -112,7 +112,19 @@ export async function updateExpense(
 	const now = new Date();
 	const updates = { ...data, updatedAt: now };
 
-	expenses.update((e) => e.map((x) => (x.id === id ? { ...x, ...updates } : x)));
+	let optimisticExpense: Expense | undefined;
+	expenses.update((e) => e.map((x) => {
+		if (x.id === id) {
+			optimisticExpense = { ...x, ...updates };
+			return optimisticExpense;
+		}
+		return x;
+	}));
+
+	// Persist optimistic update to IDB so it survives navigation while offline
+	if (optimisticExpense) {
+		try { await putExpense(optimisticExpense); } catch { /* IDB unavailable */ }
+	}
 
 	try {
 		const res = await fetch(`/api/trips/${tripId}/expenses/${id}`, {
