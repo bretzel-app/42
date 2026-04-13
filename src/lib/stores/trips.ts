@@ -26,6 +26,10 @@ export async function loadTrips() {
 		// IDB unavailable
 	}
 
+	// Show whatever we have from IDB immediately
+	tripsLoaded.set(true);
+
+	// Then fetch fresh data from server in the background
 	try {
 		const res = await fetch('/api/trips');
 		if (res.ok) {
@@ -39,8 +43,6 @@ export async function loadTrips() {
 	} catch {
 		// Offline — IDB data stands
 	}
-
-	tripsLoaded.set(true);
 }
 
 export async function createTrip(data: {

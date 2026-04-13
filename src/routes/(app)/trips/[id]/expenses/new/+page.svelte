@@ -11,6 +11,7 @@
 	import SplitControls from '$lib/components/SplitControls.svelte';
 	import LocationCapture from '$lib/components/LocationCapture.svelte';
 	import { loadMembers, activeMembers } from '$lib/stores/members.js';
+	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import type { Trip, CategoryId } from '$lib/types/index.js';
 
 	const tripId = $derived($page.params.id!);
@@ -42,13 +43,26 @@
 
 	onMount(async () => {
 		await loadMembers(tripId);
+
+		// Load from IDB first for instant offline display
+		try {
+			const idbTrip = await getTrip(tripId);
+			if (idbTrip) {
+				trip = idbTrip;
+				currency = idbTrip.homeCurrency;
+			}
+		} catch { /* IDB unavailable */ }
+
+		// Then try server for fresh data
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
-				trip = await res.json();
-				currency = trip!.homeCurrency;
+				const fetched: Trip = await res.json();
+				trip = fetched;
+				currency = fetched.homeCurrency;
+				try { await putTrip(fetched); } catch { /* IDB unavailable */ }
 			}
-		} catch { /* offline */ }
+		} catch { /* offline — IDB data stands */ }
 	});
 
 	const showExchangeRate = $derived(trip && currency !== trip.homeCurrency);

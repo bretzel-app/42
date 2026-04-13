@@ -41,7 +41,7 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
-				navigateFallback: null,
+				navigateFallback: '/',
 				runtimeCaching: [
 					{
 						urlPattern: ({ request }) => request.mode === 'navigate',
@@ -58,6 +58,7 @@ export default defineConfig({
 						handler: 'NetworkFirst',
 						options: {
 							cacheName: 'api-cache',
+							networkTimeoutSeconds: 3,
 							expiration: { maxEntries: 50, maxAgeSeconds: 300 }
 						}
 					},
