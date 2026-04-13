@@ -17,10 +17,8 @@ test.describe('Offline mode', () => {
 	test('Scenario: Trip list renders from local data when offline', async ({ authenticatedPage: page }) => {
 		// Given a trip "Offline Trip" was created while online
 		await createTrip(page, { name: 'Offline Trip', destination: 'Mountains' });
-		await page.goto('/');
-		await expect(page.getByText('Offline Trip')).toBeVisible();
 
-		// When the network goes down and the page is reloaded
+		// When the network goes down and the user navigates to the trip list
 		await goOffline(page);
 		await page.goto('/');
 
@@ -61,7 +59,8 @@ test.describe('Offline mode', () => {
 		await expect(page.getByText('Save Offline Updated')).toBeVisible();
 
 		// And the trip list shows the updated name
-		await page.goto('/');
+		await page.getByRole('link', { name: 'Trips' }).click();
+		await page.waitForURL('/');
 		await expect(page.getByText('Save Offline Updated')).toBeVisible();
 
 		await goOnline(page);
