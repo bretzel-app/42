@@ -23,6 +23,10 @@ export async function loadSettlements(tripId: string) {
 		// IDB unavailable
 	}
 
+	// Show whatever we have from IDB immediately
+	settlementsLoaded.set(true);
+
+	// Then fetch fresh data from server in the background
 	try {
 		const res = await fetch(`/api/trips/${tripId}/settlements`);
 		if (res.ok) {
@@ -35,8 +39,6 @@ export async function loadSettlements(tripId: string) {
 	} catch {
 		// Offline
 	}
-
-	settlementsLoaded.set(true);
 }
 
 export async function createSettlement(data: {

@@ -26,6 +26,10 @@ export async function loadExpenses(tripId: string) {
 		// IDB unavailable
 	}
 
+	// Show whatever we have from IDB immediately
+	expensesLoaded.set(true);
+
+	// Then fetch fresh data from server in the background
 	try {
 		const res = await fetch(`/api/trips/${tripId}/expenses`);
 		if (res.ok) {
@@ -38,8 +42,6 @@ export async function loadExpenses(tripId: string) {
 	} catch {
 		// Offline
 	}
-
-	expensesLoaded.set(true);
 }
 
 export async function createExpense(data: {
