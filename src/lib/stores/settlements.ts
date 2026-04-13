@@ -14,17 +14,19 @@ export const activeSettlements = derived(settlements, ($settlements) =>
 );
 
 export async function loadSettlements(tripId: string) {
+	let hasIdbData = false;
 	try {
 		const idbSettlements = await getSettlementsByTrip(tripId);
 		if (idbSettlements.length > 0) {
 			settlements.set(idbSettlements.filter((s) => !s.deleted));
+			hasIdbData = true;
 		}
 	} catch {
 		// IDB unavailable
 	}
 
-	// Show whatever we have from IDB immediately
-	settlementsLoaded.set(true);
+	// Show IDB data immediately if available; otherwise wait for server
+	if (hasIdbData) settlementsLoaded.set(true);
 
 	// Then fetch fresh data from server in the background
 	try {
@@ -39,6 +41,8 @@ export async function loadSettlements(tripId: string) {
 	} catch {
 		// Offline
 	}
+
+	settlementsLoaded.set(true);
 }
 
 export async function createSettlement(data: {

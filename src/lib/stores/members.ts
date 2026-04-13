@@ -12,17 +12,19 @@ export const activeMembers = derived(members, ($members) =>
 );
 
 export async function loadMembers(tripId: string) {
+	let hasIdbData = false;
 	try {
 		const idbMembers = await getMembersByTrip(tripId);
 		if (idbMembers.length > 0) {
 			members.set(idbMembers.filter((m) => !m.deleted));
+			hasIdbData = true;
 		}
 	} catch {
 		// IDB unavailable
 	}
 
-	// Show whatever we have from IDB immediately
-	membersLoaded.set(true);
+	// Show IDB data immediately if available; otherwise wait for server
+	if (hasIdbData) membersLoaded.set(true);
 
 	// Then fetch fresh data from server in the background
 	try {
@@ -37,6 +39,8 @@ export async function loadMembers(tripId: string) {
 	} catch {
 		// Offline
 	}
+
+	membersLoaded.set(true);
 }
 
 export async function createMember(
