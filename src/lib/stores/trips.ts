@@ -16,18 +16,20 @@ export const activeTrips = derived(trips, ($trips) =>
 export async function loadTrips() {
 	tripsLoaded.set(false);
 
+	let hasIdbData = false;
 	try {
 		// Load from IDB first for instant display
 		const idbTrips = await getAllTrips();
 		if (idbTrips.length > 0) {
 			trips.set(idbTrips.filter((t) => !t.deleted));
+			hasIdbData = true;
 		}
 	} catch {
 		// IDB unavailable
 	}
 
-	// Show whatever we have from IDB immediately
-	tripsLoaded.set(true);
+	// Show IDB data immediately if available; otherwise wait for server
+	if (hasIdbData) tripsLoaded.set(true);
 
 	// Then fetch fresh data from server in the background
 	try {
@@ -43,6 +45,8 @@ export async function loadTrips() {
 	} catch {
 		// Offline — IDB data stands
 	}
+
+	tripsLoaded.set(true);
 }
 
 export async function createTrip(data: {
