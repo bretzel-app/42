@@ -8,6 +8,7 @@
 	import { toDateInput, fromDateInput } from '$lib/utils/dates.js';
 	import { activeMembers, loadMembers } from '$lib/stores/members.js';
 	import MembersList from '$lib/components/MembersList.svelte';
+	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import type { Trip } from '$lib/types/index.js';
 
 	const tripId = $derived($page.params.id!);
@@ -32,23 +33,35 @@
 	let trip = $state<Trip | null>(null);
 	let hasSettlements = $state(false);
 
+	function populateForm(fetched: Trip) {
+		trip = fetched;
+		name = fetched.name;
+		destination = fetched.destination;
+		startDate = toDateInput(fetched.startDate);
+		endDate = toDateInput(fetched.endDate);
+		numberOfPeople = fetched.numberOfPeople;
+		budgetInput = fetched.totalBudget ? formatAmount(fetched.totalBudget) : '';
+		homeCurrency = fetched.homeCurrency;
+		splitExpenses = fetched.splitExpenses ?? true;
+	}
+
 	onMount(async () => {
+		// Load from IDB first for instant offline display
+		try {
+			const idbTrip = await getTrip(tripId);
+			if (idbTrip) populateForm(idbTrip);
+		} catch { /* IDB unavailable */ }
+		loading = false;
+
+		// Then try server for fresh data
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
 				const fetched: Trip = await res.json();
-				trip = fetched;
-				name = fetched.name;
-				destination = fetched.destination;
-				startDate = toDateInput(fetched.startDate);
-				endDate = toDateInput(fetched.endDate);
-				numberOfPeople = fetched.numberOfPeople;
-				budgetInput = fetched.totalBudget ? formatAmount(fetched.totalBudget) : '';
-				homeCurrency = fetched.homeCurrency;
-				splitExpenses = fetched.splitExpenses ?? true;
+				populateForm(fetched);
+				try { await putTrip(fetched); } catch { /* IDB unavailable */ }
 			}
-		} catch { /* offline */ }
-		loading = false;
+		} catch { /* offline — IDB data stands */ }
 
 		await loadMembers(tripId);
 

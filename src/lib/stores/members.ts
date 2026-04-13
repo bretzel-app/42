@@ -21,6 +21,10 @@ export async function loadMembers(tripId: string) {
 		// IDB unavailable
 	}
 
+	// Show whatever we have from IDB immediately
+	membersLoaded.set(true);
+
+	// Then fetch fresh data from server in the background
 	try {
 		const res = await fetch(`/api/trips/${tripId}/members`);
 		if (res.ok) {
@@ -33,8 +37,6 @@ export async function loadMembers(tripId: string) {
 	} catch {
 		// Offline
 	}
-
-	membersLoaded.set(true);
 }
 
 export async function createMember(
