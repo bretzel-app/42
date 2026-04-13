@@ -107,7 +107,19 @@ export async function updateTrip(id: string, data: Partial<Trip>): Promise<void>
 	const now = new Date();
 	const updates = { ...data, updatedAt: now };
 
-	trips.update((t) => t.map((x) => (x.id === id ? { ...x, ...updates } : x)));
+	let optimisticTrip: Trip | undefined;
+	trips.update((t) => t.map((x) => {
+		if (x.id === id) {
+			optimisticTrip = { ...x, ...updates };
+			return optimisticTrip;
+		}
+		return x;
+	}));
+
+	// Persist optimistic update to IDB so it survives navigation while offline
+	if (optimisticTrip) {
+		try { await putTrip(optimisticTrip); } catch { /* IDB unavailable */ }
+	}
 
 	try {
 		const res = await fetch(`/api/trips/${id}`, {
