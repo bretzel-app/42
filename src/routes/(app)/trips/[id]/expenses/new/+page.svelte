@@ -41,6 +41,8 @@
 		}
 	});
 
+	let userChangedCurrency = false;
+
 	onMount(async () => {
 		await loadMembers(tripId);
 
@@ -59,7 +61,7 @@
 			if (res.ok) {
 				const fetched: Trip = await res.json();
 				trip = fetched;
-				currency = fetched.homeCurrency;
+				if (!userChangedCurrency) currency = fetched.homeCurrency;
 				try { await putTrip(fetched); } catch { /* IDB unavailable */ }
 			}
 		} catch { /* offline — IDB data stands */ }
@@ -137,6 +139,7 @@
 				<select
 					id="currency"
 					bind:value={currency}
+					onchange={() => (userChangedCurrency = true)}
 					class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 py-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]"
 					data-testid="expense-currency-select"
 				>

@@ -33,6 +33,8 @@
 	let trip = $state<Trip | null>(null);
 	let hasSettlements = $state(false);
 
+	let formDirty = $state(false);
+
 	function populateForm(fetched: Trip) {
 		trip = fetched;
 		name = fetched.name;
@@ -47,21 +49,27 @@
 
 	onMount(async () => {
 		// Load from IDB first for instant offline display
+		let hasIdbData = false;
 		try {
 			const idbTrip = await getTrip(tripId);
-			if (idbTrip) populateForm(idbTrip);
+			if (idbTrip) {
+				populateForm(idbTrip);
+				hasIdbData = true;
+			}
 		} catch { /* IDB unavailable */ }
-		loading = false;
+		if (hasIdbData) loading = false;
 
 		// Then try server for fresh data
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
 				const fetched: Trip = await res.json();
-				populateForm(fetched);
+				if (!formDirty) populateForm(fetched);
+				else trip = fetched;
 				try { await putTrip(fetched); } catch { /* IDB unavailable */ }
 			}
 		} catch { /* offline — IDB data stands */ }
+		loading = false;
 
 		await loadMembers(tripId);
 
@@ -132,7 +140,7 @@
 		</div>
 
 		{#if tab === 'details'}
-			<form onsubmit={handleSave} class="space-y-4">
+			<form onsubmit={handleSave} oninput={() => (formDirty = true)} class="space-y-4">
 				{#if errorMsg}
 					<div class="rounded-sm border border-[var(--error-border)] bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
 						{errorMsg}

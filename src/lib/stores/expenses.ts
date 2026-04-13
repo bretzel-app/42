@@ -17,17 +17,19 @@ export const activeExpenses = derived(expenses, ($expenses) =>
 export async function loadExpenses(tripId: string) {
 	currentTripId.set(tripId);
 
+	let hasIdbData = false;
 	try {
 		const idbExpenses = await getExpensesByTrip(tripId);
 		if (idbExpenses.length > 0) {
 			expenses.set(idbExpenses.filter((e) => !e.deleted));
+			hasIdbData = true;
 		}
 	} catch {
 		// IDB unavailable
 	}
 
-	// Show whatever we have from IDB immediately
-	expensesLoaded.set(true);
+	// Show IDB data immediately if available; otherwise wait for server
+	if (hasIdbData) expensesLoaded.set(true);
 
 	// Then fetch fresh data from server in the background
 	try {
@@ -42,6 +44,8 @@ export async function loadExpenses(tripId: string) {
 	} catch {
 		// Offline
 	}
+
+	expensesLoaded.set(true);
 }
 
 export async function createExpense(data: {
