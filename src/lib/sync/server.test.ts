@@ -266,6 +266,44 @@ describe('processSyncPush', () => {
 			expect(trip!.name).toBe('My Trip'); // unchanged
 		});
 
+		it('updates a trip when data contains ISO string dates', async () => {
+			db.insert(schema.trips).values({
+				id: 'trip-1',
+				userId: 1,
+				name: 'Original',
+				destination: '',
+				startDate: new Date('2025-06-01'),
+				endDate: new Date('2025-06-15'),
+				createdAt: new Date(NOW - 10000),
+				updatedAt: new Date(NOW - 10000),
+				version: 1
+			}).run();
+
+			// The client sends dates as ISO strings (from JSON.stringify of Date objects)
+			const changes: SyncQueueItem[] = [
+				{
+					entityType: 'trip',
+					entityId: 'trip-1',
+					operation: 'update',
+					data: {
+						name: 'Updated',
+						startDate: '2025-07-01T00:00:00.000Z',
+						endDate: '2025-07-15T00:00:00.000Z',
+						updatedAt: new Date(NOW).toISOString()
+					},
+					timestamp: NOW
+				}
+			];
+
+			await processSyncPush(db, changes, 1);
+
+			const trip = db.select().from(schema.trips).where(eq(schema.trips.id, 'trip-1')).get();
+			expect(trip!.name).toBe('Updated');
+			expect(trip!.startDate).toBeInstanceOf(Date);
+			expect(trip!.startDate.getFullYear()).toBe(2025);
+			expect(trip!.startDate.getMonth()).toBe(6); // July = 6
+		});
+
 		it('ignores update with older timestamp (LWW)', async () => {
 			db.insert(schema.trips).values({
 				id: 'trip-1',
@@ -526,8 +564,9 @@ describe('getChangesSince', () => {
 	});
 
 	it('returns trips changed since timestamp', async () => {
+		// Use timestamps at least 2 seconds apart — Drizzle stores as Unix seconds
 		const old = NOW - 60000;
-		const recent = NOW - 1000;
+		const recent = NOW - 2000;
 
 		db.insert(schema.trips).values({
 			id: 'trip-old', userId: 1, name: 'Old', destination: '',
@@ -541,10 +580,12 @@ describe('getChangesSince', () => {
 			createdAt: new Date(recent), updatedAt: new Date(recent), version: 1
 		}).run();
 
-		const result = await getChangesSince(db, old - 1, 1);
+		// Since timestamp well before both trips
+		const result = await getChangesSince(db, old - 2000, 1);
 		expect(result.trips).toHaveLength(2);
 
-		const resultRecent = await getChangesSince(db, old + 1, 1);
+		// Since timestamp between old and new (2 seconds after old)
+		const resultRecent = await getChangesSince(db, old + 2000, 1);
 		expect(resultRecent.trips).toHaveLength(1);
 		expect(resultRecent.trips[0].name).toBe('New');
 	});
@@ -573,7 +614,8 @@ describe('getChangesSince', () => {
 			createdAt: new Date(NOW), updatedAt: new Date(NOW), version: 1
 		}).run();
 
-		const result = await getChangesSince(db, NOW - 1, 1);
+		// Use a since timestamp well before the expense (seconds precision)
+		const result = await getChangesSince(db, NOW - 2000, 1);
 		expect(result.expenses).toHaveLength(1);
 		expect(result.expenses[0].amount).toBe(1000);
 	});
