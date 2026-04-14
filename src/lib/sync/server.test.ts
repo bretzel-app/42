@@ -527,6 +527,88 @@ describe('processSyncPush', () => {
 		});
 	});
 
+	describe('settlement sync', () => {
+		beforeEach(() => {
+			// Create trip and members for settlements to reference
+			db.insert(schema.trips).values({
+				id: 'trip-1', userId: 1, name: 'Trip', destination: '',
+				startDate: new Date('2025-06-01'), endDate: new Date('2025-06-15'),
+				createdAt: new Date(NOW), updatedAt: new Date(NOW), version: 1
+			}).run();
+			db.insert(schema.tripMembers).values({
+				id: 'member-1', tripId: 'trip-1', name: 'Alice', addedBy: 1,
+				createdAt: new Date(NOW), updatedAt: new Date(NOW), version: 1
+			}).run();
+			db.insert(schema.tripMembers).values({
+				id: 'member-2', tripId: 'trip-1', name: 'Bob', addedBy: 1,
+				createdAt: new Date(NOW), updatedAt: new Date(NOW), version: 1
+			}).run();
+		});
+
+		it('updates a settlement with nullable ISO date string', async () => {
+			db.insert(schema.settlements).values({
+				id: 'settle-1', tripId: 'trip-1', fromMemberId: 'member-1', toMemberId: 'member-2',
+				amount: 5000, date: new Date('2025-06-10'), note: 'Dinner',
+				createdAt: new Date(NOW - 60000), updatedAt: new Date(NOW - 60000), version: 1
+			}).run();
+
+			const changes: SyncQueueItem[] = [
+				{
+					entityType: 'settlement',
+					entityId: 'settle-1',
+					operation: 'update',
+					data: {
+						tripId: 'trip-1', // needed for ownership check
+						amount: 7500,
+						date: '2025-06-12T00:00:00.000Z', // nullable timestamp as ISO string
+						note: 'Updated dinner',
+					},
+					timestamp: NOW
+				}
+			];
+
+			await processSyncPush(db, changes, 1);
+
+			const settlement = db.select().from(schema.settlements).where(eq(schema.settlements.id, 'settle-1')).get();
+			expect(settlement!.amount).toBe(7500);
+			expect(settlement!.note).toBe('Updated dinner');
+			expect(settlement!.date).toBeInstanceOf(Date);
+			expect(settlement!.date!.getFullYear()).toBe(2025);
+		});
+	});
+
+	describe('server-controlled fields', () => {
+		it('ignores client-sent updatedAt and version in updates', async () => {
+			db.insert(schema.trips).values({
+				id: 'trip-1', userId: 1, name: 'Original', destination: '',
+				startDate: new Date('2025-06-01'), endDate: new Date('2025-06-15'),
+				createdAt: new Date(NOW - 60000), updatedAt: new Date(NOW - 60000), version: 3
+			}).run();
+
+			const changes: SyncQueueItem[] = [
+				{
+					entityType: 'trip',
+					entityId: 'trip-1',
+					operation: 'update',
+					data: {
+						name: 'Updated',
+						updatedAt: new Date(NOW - 50000).toISOString(), // client tries to set old timestamp
+						version: 99 // client tries to set arbitrary version
+					},
+					timestamp: NOW
+				}
+			];
+
+			await processSyncPush(db, changes, 1);
+
+			const trip = db.select().from(schema.trips).where(eq(schema.trips.id, 'trip-1')).get();
+			expect(trip!.name).toBe('Updated');
+			expect(trip!.version).toBe(4); // server incremented from 3, not client's 99
+			// Server sets updatedAt from change.timestamp (stored as seconds, so within 1s of NOW)
+			expect(Math.abs(trip!.updatedAt.getTime() - NOW)).toBeLessThan(1000);
+		});
+	});
+
 	describe('sync log', () => {
 		it('logs all sync operations', async () => {
 			const changes: SyncQueueItem[] = [

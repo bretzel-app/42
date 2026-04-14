@@ -1,4 +1,4 @@
-import { test, expect, createTrip, addExpense } from './helpers/fixtures.js';
+import { test, expect, createTrip } from './helpers/fixtures.js';
 
 /**
  * Simulate offline by aborting all API requests.
