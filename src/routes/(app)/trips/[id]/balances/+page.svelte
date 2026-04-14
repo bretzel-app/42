@@ -33,8 +33,6 @@
 	// Home currency — fetched from trip
 	let homeCurrency = $state('EUR');
 	let tripName = $state('');
-	let loading = $state(true);
-
 	onMount(async () => {
 		// Load trip from IDB first for instant offline display
 		try {
@@ -50,8 +48,6 @@
 			loadSettlements(tripId),
 			loadExpenses(tripId)
 		]);
-
-		loading = false;
 
 		// Fetch trip for homeCurrency + name (background refresh)
 		try {
