@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { loadMembers } from '$lib/stores/members.js';
+	import { getTrip } from '$lib/sync/idb.js';
 	import { loadSettlements, activeSettlements, removeSettlement } from '$lib/stores/settlements.js';
 	import { loadExpenses, activeExpenses } from '$lib/stores/expenses.js';
 	import { formatCents } from '$lib/utils/currency.js';
@@ -35,13 +36,24 @@
 	let loading = $state(true);
 
 	onMount(async () => {
+		// Load trip from IDB first for instant offline display
+		try {
+			const idbTrip = await getTrip(tripId);
+			if (idbTrip) {
+				homeCurrency = idbTrip.homeCurrency || 'EUR';
+				tripName = idbTrip.name || '';
+			}
+		} catch { /* IDB unavailable */ }
+
 		await Promise.all([
 			loadMembers(tripId),
 			loadSettlements(tripId),
 			loadExpenses(tripId)
 		]);
 
-		// Fetch trip for homeCurrency + name
+		loading = false;
+
+		// Fetch trip for homeCurrency + name (background refresh)
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
@@ -49,11 +61,7 @@
 				homeCurrency = trip.homeCurrency || 'EUR';
 				tripName = trip.name || '';
 			}
-		} catch {
-			// offline — use default
-		}
-
-		loading = false;
+		} catch { /* offline — IDB data stands */ }
 	});
 
 	// After a settlement is confirmed, refresh balances from server
