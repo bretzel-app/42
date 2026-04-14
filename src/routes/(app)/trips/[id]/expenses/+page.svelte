@@ -31,9 +31,15 @@
 			}
 		} catch { /* IDB unavailable */ }
 
+		// Kick off store loads (IDB-first) before clearing loading
+		const storesReady = Promise.all([
+			loadExpenses(tripId),
+			loadMembers(tripId)
+		]);
+
 		if (hasIdbData) loading = false;
 
-		// Then try server for fresh data
+		// Then fetch fresh data from server in the background
 		try {
 			const res = await fetch(`/api/trips/${tripId}`);
 			if (res.ok) {
@@ -42,10 +48,7 @@
 			}
 		} catch { /* offline — IDB data stands */ }
 
-		await Promise.all([
-			loadExpenses(tripId),
-			loadMembers(tripId)
-		]);
+		await storesReady;
 		loading = false;
 	});
 

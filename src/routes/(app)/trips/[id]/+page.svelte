@@ -24,7 +24,7 @@
 	const tripId = $derived($page.params.id!);
 
 	onMount(async () => {
-		// Load from IDB first for instant offline display
+		// Load trip + stores from IDB first, then clear loading
 		let hasIdbData = false;
 		try {
 			const idbTrip = await getTrip(tripId);
@@ -34,9 +34,15 @@
 			}
 		} catch { /* IDB unavailable */ }
 
+		// Kick off store loads (IDB-first) before clearing loading
+		const storesReady = Promise.all([
+			loadExpenses(tripId),
+			loadMembers(tripId)
+		]);
+
 		if (hasIdbData) loading = false;
 
-		// Then try server for fresh data
+		// Then fetch fresh data from server in the background
 		try {
 			const tripRes = await fetch(`/api/trips/${tripId}`);
 			if (tripRes.ok) {
@@ -48,10 +54,7 @@
 			}
 		} catch { /* offline — IDB data stands */ }
 
-		await Promise.all([
-			loadExpenses(tripId),
-			loadMembers(tripId)
-		]);
+		await storesReady;
 
 		// Fetch balances if there are 2+ members
 		if ($activeMembers.length >= 2 && trip?.splitExpenses !== false) {
