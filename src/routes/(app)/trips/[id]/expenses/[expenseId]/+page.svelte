@@ -76,7 +76,8 @@
 	});
 
 	onMount(async () => {
-		await loadMembers(tripId);
+		// Kick off members load (IDB-first) without blocking
+		const membersReady = loadMembers(tripId);
 
 		// Load from IDB first for instant offline display
 		let hasIdbData = false;
@@ -91,6 +92,7 @@
 			}
 		} catch { /* IDB unavailable */ }
 
+		await membersReady;
 		if (hasIdbData) loading = false;
 
 		// Then try server for fresh data
