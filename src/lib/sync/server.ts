@@ -15,11 +15,13 @@ import { getSharedTripIds } from '$lib/server/collaborators.js';
 /** Columns stored as integer timestamps in SQLite — values must be Date objects for Drizzle */
 const TIMESTAMP_FIELDS = new Set(['startDate', 'endDate', 'date', 'updatedAt', 'createdAt']);
 
-/** Coerce a sync queue value to a Date if the field is a timestamp column */
+/** Coerce a sync queue value to a Date if the field is a timestamp column.
+ *  Returns undefined for invalid dates — callers should skip the field to avoid
+ *  violating NOT NULL constraints on columns like startDate/endDate. */
 function coerceDate(key: string, value: unknown): unknown {
 	if (TIMESTAMP_FIELDS.has(key) && value != null) {
 		const d = value instanceof Date ? value : new Date(value as string | number);
-		return isNaN(d.getTime()) ? null : d;
+		return isNaN(d.getTime()) ? undefined : d;
 	}
 	return value;
 }
@@ -53,8 +55,9 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									version: existing.version + 1
 								};
 								for (const [key, value] of Object.entries(change.data)) {
-									if (key !== 'id' && key !== 'userId' && key !== 'createdAt') {
-										updates[key] = coerceDate(key, value);
+									if (key !== 'id' && key !== 'userId' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'version') {
+										const coerced = coerceDate(key, value);
+										if (coerced !== undefined) updates[key] = coerced;
 									}
 								}
 								tx.update(trips).set(updates).where(eq(trips.id, change.entityId)).run();
@@ -98,8 +101,9 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									version: existing.version + 1
 								};
 								for (const [key, value] of Object.entries(change.data)) {
-									if (key !== 'id' && key !== 'userId' && key !== 'createdAt' && key !== 'latitude' && key !== 'longitude') {
-										updates[key] = coerceDate(key, value);
+									if (key !== 'id' && key !== 'userId' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'version' && key !== 'latitude' && key !== 'longitude') {
+										const coerced = coerceDate(key, value);
+										if (coerced !== undefined) updates[key] = coerced;
 									}
 								}
 								if ('latitude' in change.data || 'longitude' in change.data) {
@@ -182,8 +186,9 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									version: existing.version + 1
 								};
 								for (const [key, value] of Object.entries(change.data)) {
-									if (key !== 'id' && key !== 'tripId' && key !== 'addedBy' && key !== 'createdAt') {
-										updates[key] = coerceDate(key, value);
+									if (key !== 'id' && key !== 'tripId' && key !== 'addedBy' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'version') {
+										const coerced = coerceDate(key, value);
+										if (coerced !== undefined) updates[key] = coerced;
 									}
 								}
 								tx.update(tripMembers).set(updates).where(eq(tripMembers.id, change.entityId)).run();
@@ -234,8 +239,9 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									version: existing.version + 1
 								};
 								for (const [key, value] of Object.entries(change.data)) {
-									if (key !== 'id' && key !== 'expenseId' && key !== 'createdAt') {
-										updates[key] = coerceDate(key, value);
+									if (key !== 'id' && key !== 'expenseId' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'version') {
+										const coerced = coerceDate(key, value);
+										if (coerced !== undefined) updates[key] = coerced;
 									}
 								}
 								tx.update(expenseSplits).set(updates).where(eq(expenseSplits.id, change.entityId)).run();
@@ -283,8 +289,9 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 									version: existing.version + 1
 								};
 								for (const [key, value] of Object.entries(change.data)) {
-									if (key !== 'id' && key !== 'tripId' && key !== 'createdAt') {
-										updates[key] = coerceDate(key, value);
+									if (key !== 'id' && key !== 'tripId' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'version') {
+										const coerced = coerceDate(key, value);
+										if (coerced !== undefined) updates[key] = coerced;
 									}
 								}
 								tx.update(settlements).set(updates).where(eq(settlements.id, change.entityId)).run();
