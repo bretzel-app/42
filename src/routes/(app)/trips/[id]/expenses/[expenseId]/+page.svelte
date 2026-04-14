@@ -79,13 +79,19 @@
 		await loadMembers(tripId);
 
 		// Load from IDB first for instant offline display
+		let hasIdbData = false;
 		try {
 			const idbTrip = await getTrip(tripId);
 			if (idbTrip) trip = idbTrip;
 			const idbExpenses = await getExpensesByTrip(tripId);
 			const idbExpense = idbExpenses.find((e) => e.id === expenseId);
-			if (idbExpense) populateFromExpense(idbExpense);
+			if (idbExpense) {
+				populateFromExpense(idbExpense);
+				hasIdbData = true;
+			}
 		} catch { /* IDB unavailable */ }
+
+		if (hasIdbData) loading = false;
 
 		// Then try server for fresh data
 		try {

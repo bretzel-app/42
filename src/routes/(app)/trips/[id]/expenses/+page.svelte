@@ -22,10 +22,16 @@
 
 	onMount(async () => {
 		// Load from IDB first for instant offline display
+		let hasIdbData = false;
 		try {
 			const idbTrip = await getTrip(tripId);
-			if (idbTrip) trip = idbTrip;
+			if (idbTrip) {
+				trip = idbTrip;
+				hasIdbData = true;
+			}
 		} catch { /* IDB unavailable */ }
+
+		if (hasIdbData) loading = false;
 
 		// Then try server for fresh data
 		try {
