@@ -12,6 +12,18 @@ import { eq, gt, and, inArray } from 'drizzle-orm';
 import type { SyncQueueItem } from './idb.js';
 import { getSharedTripIds } from '$lib/server/collaborators.js';
 
+/** Columns stored as integer timestamps in SQLite — values must be Date objects for Drizzle */
+const TIMESTAMP_FIELDS = new Set(['startDate', 'endDate', 'date', 'updatedAt', 'createdAt']);
+
+/** Coerce a sync queue value to a Date if the field is a timestamp column */
+function coerceDate(key: string, value: unknown): unknown {
+	if (TIMESTAMP_FIELDS.has(key) && value != null) {
+		const d = value instanceof Date ? value : new Date(value as string | number);
+		return isNaN(d.getTime()) ? null : d;
+	}
+	return value;
+}
+
 function sanitizeCoords(lat: unknown, lng: unknown): { latitude: number | null; longitude: number | null } {
 	const latNum = typeof lat === 'number' ? lat : Number(lat);
 	const lngNum = typeof lng === 'number' ? lng : Number(lng);
@@ -42,7 +54,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 								};
 								for (const [key, value] of Object.entries(change.data)) {
 									if (key !== 'id' && key !== 'userId' && key !== 'createdAt') {
-										updates[key] = value;
+										updates[key] = coerceDate(key, value);
 									}
 								}
 								tx.update(trips).set(updates).where(eq(trips.id, change.entityId)).run();
@@ -87,7 +99,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 								};
 								for (const [key, value] of Object.entries(change.data)) {
 									if (key !== 'id' && key !== 'userId' && key !== 'createdAt' && key !== 'latitude' && key !== 'longitude') {
-										updates[key] = value;
+										updates[key] = coerceDate(key, value);
 									}
 								}
 								if ('latitude' in change.data || 'longitude' in change.data) {
@@ -171,7 +183,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 								};
 								for (const [key, value] of Object.entries(change.data)) {
 									if (key !== 'id' && key !== 'tripId' && key !== 'addedBy' && key !== 'createdAt') {
-										updates[key] = value;
+										updates[key] = coerceDate(key, value);
 									}
 								}
 								tx.update(tripMembers).set(updates).where(eq(tripMembers.id, change.entityId)).run();
@@ -223,7 +235,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 								};
 								for (const [key, value] of Object.entries(change.data)) {
 									if (key !== 'id' && key !== 'expenseId' && key !== 'createdAt') {
-										updates[key] = value;
+										updates[key] = coerceDate(key, value);
 									}
 								}
 								tx.update(expenseSplits).set(updates).where(eq(expenseSplits.id, change.entityId)).run();
@@ -272,7 +284,7 @@ export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: 
 								};
 								for (const [key, value] of Object.entries(change.data)) {
 									if (key !== 'id' && key !== 'tripId' && key !== 'createdAt') {
-										updates[key] = value;
+										updates[key] = coerceDate(key, value);
 									}
 								}
 								tx.update(settlements).set(updates).where(eq(settlements.id, change.entityId)).run();
