@@ -465,6 +465,38 @@ describe('processSyncPush', () => {
 			expect(expense!.latitude).toBeNull();
 			expect(expense!.longitude).toBeNull();
 		});
+
+		// Regression: the old sanitizer used `Number(null) === 0` and passed
+		// the bounds check, so every offline-synced expense without a
+		// captured location persisted (0, 0) on the server.
+		it('keeps coordinates null when the client omits a location', async () => {
+			const changes: SyncQueueItem[] = [
+				{
+					entityType: 'expense',
+					entityId: 'exp-no-geo',
+					operation: 'create',
+					data: {
+						id: 'exp-no-geo',
+						tripId: 'trip-1',
+						amount: 1000,
+						currency: 'EUR',
+						exchangeRate: '1',
+						categoryId: 'food',
+						date: NOW,
+						note: '',
+						latitude: null,
+						longitude: null,
+					},
+					timestamp: NOW
+				}
+			];
+
+			await processSyncPush(db, changes, 1);
+
+			const expense = db.select().from(schema.expenses).where(eq(schema.expenses.id, 'exp-no-geo')).get();
+			expect(expense!.latitude).toBeNull();
+			expect(expense!.longitude).toBeNull();
+		});
 	});
 
 	describe('batch sync', () => {

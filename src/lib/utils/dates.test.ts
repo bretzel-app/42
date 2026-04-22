@@ -44,13 +44,18 @@ describe('fromDateInput', () => {
 describe('toDateInput / fromDateInput round-trip (timezone-sensitive)', () => {
 	const originalTZ = process.env.TZ;
 
+	// `process.env.X = undefined` stringifies to `'undefined'`, which would
+	// pin every subsequent test to an invalid timezone. Delete when unset.
+	function restoreTZ() {
+		if (originalTZ === undefined) delete process.env.TZ;
+		else process.env.TZ = originalTZ;
+	}
+
 	describe('in UTC+05:00 (east of UTC)', () => {
 		beforeAll(() => {
 			process.env.TZ = 'Asia/Karachi';
 		});
-		afterAll(() => {
-			process.env.TZ = originalTZ;
-		});
+		afterAll(restoreTZ);
 
 		it('preserves the picked date across a round-trip', () => {
 			expect(toDateInput(fromDateInput('2026-04-22'))).toBe('2026-04-22');
@@ -68,9 +73,7 @@ describe('toDateInput / fromDateInput round-trip (timezone-sensitive)', () => {
 		beforeAll(() => {
 			process.env.TZ = 'America/New_York';
 		});
-		afterAll(() => {
-			process.env.TZ = originalTZ;
-		});
+		afterAll(restoreTZ);
 
 		it('preserves the picked date across a round-trip', () => {
 			expect(toDateInput(fromDateInput('2026-04-22'))).toBe('2026-04-22');

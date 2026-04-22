@@ -11,6 +11,7 @@ import {
 import { eq, gt, and, inArray } from 'drizzle-orm';
 import type { SyncQueueItem } from './idb.js';
 import { getSharedTripIds } from '$lib/server/collaborators.js';
+import { sanitizeCoords } from '$lib/utils/coords.js';
 
 /** Columns stored as integer timestamps in SQLite — values must be Date objects for Drizzle */
 const TIMESTAMP_FIELDS = new Set(['startDate', 'endDate', 'date', 'updatedAt', 'createdAt']);
@@ -24,15 +25,6 @@ function coerceDate(key: string, value: unknown): unknown {
 		return isNaN(d.getTime()) ? undefined : d;
 	}
 	return value;
-}
-
-function sanitizeCoords(lat: unknown, lng: unknown): { latitude: number | null; longitude: number | null } {
-	const latNum = typeof lat === 'number' ? lat : Number(lat);
-	const lngNum = typeof lng === 'number' ? lng : Number(lng);
-	if (Number.isFinite(latNum) && Number.isFinite(lngNum) && latNum >= -90 && latNum <= 90 && lngNum >= -180 && lngNum <= 180) {
-		return { latitude: latNum, longitude: lngNum };
-	}
-	return { latitude: null, longitude: null };
 }
 
 export async function processSyncPush(db: Db, changes: SyncQueueItem[], userId: number): Promise<void> {
