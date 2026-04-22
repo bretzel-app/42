@@ -54,15 +54,20 @@ export function formatDateRange(startDate: Date, endDate: Date): string {
 }
 
 /**
- * Format date to YYYY-MM-DD for input[type="date"]
+ * Format date to YYYY-MM-DD for input[type="date"] using local calendar
+ * components. `toISOString` would shift east-of-UTC dates back a day, and
+ * `fromDateInput` already parses in local time — the two must be symmetric.
  */
 export function toDateInput(date: Date): string {
 	const d = new Date(date);
-	return d.toISOString().split('T')[0];
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${day}`;
 }
 
 /**
- * Parse YYYY-MM-DD string to Date
+ * Parse YYYY-MM-DD string to Date (local midnight).
  */
 export function fromDateInput(value: string): Date {
 	return new Date(value + 'T00:00:00');
