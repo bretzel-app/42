@@ -5,25 +5,12 @@ import { randomUUID } from 'crypto';
 import type { Expense, ExpenseSplit } from '$lib/types/index.js';
 import { canAccessTrip } from './collaborators.js';
 import { getTrip } from './trips-service.js';
+import { sanitizeCoords } from '$lib/utils/coords.js';
 import { error } from '@sveltejs/kit';
 
 interface SplitInput {
 	memberId: string;
 	amount: number;
-}
-
-/** Sanitize latitude/longitude: must be finite numbers in valid ranges, both set or both null. */
-function sanitizeCoords(lat: unknown, lng: unknown): { latitude: number | null; longitude: number | null } {
-	const latNum = typeof lat === 'number' ? lat : Number(lat);
-	const lngNum = typeof lng === 'number' ? lng : Number(lng);
-	if (
-		Number.isFinite(latNum) && Number.isFinite(lngNum) &&
-		latNum >= -90 && latNum <= 90 &&
-		lngNum >= -180 && lngNum <= 180
-	) {
-		return { latitude: latNum, longitude: lngNum };
-	}
-	return { latitude: null, longitude: null };
 }
 
 function toExpense(row: typeof expenses.$inferSelect): Expense {
