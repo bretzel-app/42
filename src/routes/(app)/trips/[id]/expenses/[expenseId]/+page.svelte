@@ -240,7 +240,7 @@
 				<button type="button" onclick={handleDelete} class="text-sm text-[var(--destructive)] hover:underline">Delete</button>
 				<div class="flex gap-3">
 					<a href="/trips/{tripId}/expenses" class="rounded-sm border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text)] hover:border-[var(--primary)]">Cancel</a>
-					<button type="submit" disabled={saving} class="rounded-sm bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+					<button type="submit" disabled={saving} data-testid="expense-save-btn" class="rounded-sm bg-[var(--primary)] px-6 py-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
 						{saving ? 'Saving...' : 'Save'}
 					</button>
 				</div>
