@@ -56,7 +56,7 @@ describe('parseLatLng', () => {
 		expect(parseLatLng('  48.8566 , 2.3522  ')).toEqual({ lat: 48.8566, lng: 2.3522 });
 	});
 
-	it('accepts a semicolon separator (common in locales where comma is the decimal mark)', () => {
+	it('accepts a semicolon separator', () => {
 		expect(parseLatLng('48.8566; 2.3522')).toEqual({ lat: 48.8566, lng: 2.3522 });
 	});
 

@@ -56,7 +56,7 @@ test.describe('Manual coordinate entry', () => {
 		await page.waitForURL(/\/expenses\/[^/]+$/);
 		await expect(page.getByText('48.85000, 2.35000')).toBeVisible();
 		await page.getByTestId('location-edit').click();
-		await page.getByTestId('location-input').fill('38.141677,13.082805');
+		await page.getByTestId('location-input').fill('38.141677,13.082806');
 		await page.getByTestId('location-save').click();
 		await expect(page.getByText('38.14168, 13.08281')).toBeVisible();
 		await page.getByTestId('expense-save-btn').click();
