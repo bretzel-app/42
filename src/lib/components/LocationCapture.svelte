@@ -4,7 +4,7 @@
 	import Loader2 from 'lucide-svelte/icons/loader-2';
 	import Pencil from 'lucide-svelte/icons/pencil';
 	import Check from 'lucide-svelte/icons/check';
-	import { sanitizeCoords } from '$lib/utils/coords';
+	import { sanitizeCoords, parseLatLng } from '$lib/utils/coords';
 
 	let {
 		latitude = $bindable<number | null>(null),
@@ -17,8 +17,7 @@
 	let capturing = $state(false);
 	let errorMsg = $state('');
 	let editing = $state(false);
-	let latInput = $state<number | null>(null);
-	let lngInput = $state<number | null>(null);
+	let input = $state('');
 	// Invalidation token for in-flight geolocation requests: incremented whenever
 	// the user starts manual editing or clears, so late callbacks don't clobber
 	// newer state.
@@ -61,8 +60,7 @@
 	function startEditing() {
 		captureToken++;
 		capturing = false;
-		latInput = latitude;
-		lngInput = longitude;
+		input = latitude != null && longitude != null ? `${latitude},${longitude}` : '';
 		errorMsg = '';
 		editing = true;
 	}
@@ -73,18 +71,20 @@
 	}
 
 	function saveManual() {
-		if (latInput == null && lngInput == null) {
+		const trimmed = input.trim();
+		if (trimmed === '') {
 			latitude = null;
 			longitude = null;
 			errorMsg = '';
 			editing = false;
 			return;
 		}
-		if (latInput == null || lngInput == null) {
-			errorMsg = 'Enter both latitude and longitude, or leave both blank to clear';
+		const parsed = parseLatLng(trimmed);
+		if (!parsed) {
+			errorMsg = 'Enter coordinates as "lat,lng" (e.g. 38.141677,13.082805)';
 			return;
 		}
-		const sanitized = sanitizeCoords(latInput, lngInput);
+		const sanitized = sanitizeCoords(parsed.lat, parsed.lng);
 		if (sanitized.latitude === null || sanitized.longitude === null) {
 			errorMsg = 'Enter a valid lat (-90 to 90) and lng (-180 to 180)';
 			return;
@@ -94,35 +94,34 @@
 		errorMsg = '';
 		editing = false;
 	}
+
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			saveManual();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			cancelEditing();
+		}
+	}
 </script>
 
 <div>
 	{#if editing}
 		<div class="flex flex-col gap-2 rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] p-2">
-			<div class="flex gap-2">
-				<input
-					type="number"
-					step="any"
-					min="-90"
-					max="90"
-					bind:value={latInput}
-					placeholder="Latitude"
-					aria-label="Latitude"
-					class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-xs text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
-					data-testid="location-lat-input"
-				/>
-				<input
-					type="number"
-					step="any"
-					min="-180"
-					max="180"
-					bind:value={lngInput}
-					placeholder="Longitude"
-					aria-label="Longitude"
-					class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-xs text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
-					data-testid="location-lng-input"
-				/>
-			</div>
+			<input
+				type="text"
+				inputmode="decimal"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				bind:value={input}
+				onkeydown={onKeydown}
+				placeholder="lat,lng (e.g. 38.141677,13.082805)"
+				aria-label="Coordinates as lat,lng"
+				class="w-full rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-xs text-[var(--text)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
+				data-testid="location-input"
+			/>
 			<div class="flex gap-2">
 				<button
 					type="button"

@@ -28,3 +28,27 @@ export function sanitizeCoords(
 	}
 	return { latitude: null, longitude: null };
 }
+
+/**
+ * Parse a single-field "lat,lng" coordinate string (e.g. "38.141677,13.082805")
+ * into two numbers. Tolerates whitespace and accepts either a comma or a
+ * semicolon as separator — matches the format users copy from Google Maps,
+ * Apple Maps, or OpenStreetMap URLs.
+ *
+ * Returns `null` if the input is not a well-formed pair of finite numbers.
+ * Range validation is intentionally left to `sanitizeCoords` so both paths
+ * (geolocation capture and manual entry) share one source of truth.
+ */
+export function parseLatLng(input: unknown): { lat: number; lng: number } | null {
+	if (typeof input !== 'string') return null;
+	const trimmed = input.trim();
+	if (!trimmed) return null;
+	const parts = trimmed.split(/[,;]/).map((p) => p.trim());
+	if (parts.length !== 2) return null;
+	const [latStr, lngStr] = parts;
+	if (!latStr || !lngStr) return null;
+	const lat = Number(latStr);
+	const lng = Number(lngStr);
+	if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+	return { lat, lng };
+}
