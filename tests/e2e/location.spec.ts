@@ -7,15 +7,14 @@ test.describe('Manual coordinate entry', () => {
 		// Given a trip exists
 		await createTrip(page, { name: 'Coords Trip', destination: 'Paris' });
 
-		// When the user adds an expense and enters Notre-Dame coordinates manually
+		// When the user adds an expense and enters Notre-Dame coordinates as "lat,lng"
 		await page.getByTestId('add-expense-btn').click();
 		await page.waitForURL(/\/expenses\/new/);
 		await page.getByTestId('expense-amount-input').fill('10');
 		await page.getByTestId('category-food').click();
 		await page.getByTestId('expense-note-input').fill('Baguette near Notre-Dame');
 		await page.getByTestId('location-manual').click();
-		await page.getByTestId('location-lat-input').fill('48.8530');
-		await page.getByTestId('location-lng-input').fill('2.3499');
+		await page.getByTestId('location-input').fill('48.8530,2.3499');
 		await page.getByTestId('location-save').click();
 
 		// Then the coordinates are displayed on the form before submission
@@ -32,7 +31,7 @@ test.describe('Manual coordinate entry', () => {
 		).toBeVisible();
 	});
 
-	test('Scenario: User edits coordinates on an existing expense', async ({
+	test('Scenario: Edits to coordinates on an existing expense persist after saving', async ({
 		authenticatedPage: page
 	}) => {
 		// Given a trip with an expense that has manually entered coordinates
@@ -43,13 +42,12 @@ test.describe('Manual coordinate entry', () => {
 		await page.getByTestId('category-food').click();
 		await page.getByTestId('expense-note-input').fill('Coffee');
 		await page.getByTestId('location-manual').click();
-		await page.getByTestId('location-lat-input').fill('48.85');
-		await page.getByTestId('location-lng-input').fill('2.35');
+		await page.getByTestId('location-input').fill('48.85, 2.35');
 		await page.getByTestId('location-save').click();
 		await page.getByTestId('expense-save-btn').click();
 		await page.waitForURL(/\/trips\/[^/]+\/expenses$/);
 
-		// When the user opens the expense and changes the coordinates
+		// When the user opens the expense, changes the coordinates, and saves the form
 		await page
 			.getByTestId('expense-row')
 			.filter({ hasText: 'Coffee' })
@@ -58,15 +56,24 @@ test.describe('Manual coordinate entry', () => {
 		await page.waitForURL(/\/expenses\/[^/]+$/);
 		await expect(page.getByText('48.85000, 2.35000')).toBeVisible();
 		await page.getByTestId('location-edit').click();
-		await page.getByTestId('location-lat-input').fill('51.5074');
-		await page.getByTestId('location-lng-input').fill('-0.1278');
+		await page.getByTestId('location-input').fill('38.141677,13.082805');
 		await page.getByTestId('location-save').click();
+		await expect(page.getByText('38.14168, 13.08281')).toBeVisible();
+		await page.getByTestId('expense-save-btn').click();
+		await page.waitForURL(/\/trips\/[^/]+\/expenses$/);
 
-		// Then the new coordinates replace the old ones
-		await expect(page.getByText('51.50740, -0.12780')).toBeVisible();
+		// Then reopening the expense shows the new coordinates — the edit was persisted
+		await page
+			.getByTestId('expense-row')
+			.filter({ hasText: 'Coffee' })
+			.locator('a[href*="/expenses/"]')
+			.click();
+		await page.waitForURL(/\/expenses\/[^/]+$/);
+		await expect(page.getByText('38.14168, 13.08281')).toBeVisible();
+		await expect(page.getByText('48.85000, 2.35000')).not.toBeVisible();
 	});
 
-	test('Scenario: Leaving one coordinate blank is rejected, leaving both blank clears the location', async ({
+	test('Scenario: Malformed input is rejected and blank input clears the location', async ({
 		authenticatedPage: page
 	}) => {
 		// Given a trip exists
@@ -77,31 +84,28 @@ test.describe('Manual coordinate entry', () => {
 		await page.getByTestId('category-food').click();
 		await page.getByTestId('location-manual').click();
 
-		// When only the latitude is filled
-		await page.getByTestId('location-lat-input').fill('48.85');
+		// When the input is missing the comma separator
+		await page.getByTestId('location-input').fill('48.85');
 		await page.getByTestId('location-save').click();
 
-		// Then an error asks for both values and no coordinates are stored
-		await expect(page.getByText(/Enter both latitude and longitude/i)).toBeVisible();
+		// Then a format error is shown and no coordinates are stored
+		await expect(page.getByText(/Enter coordinates as/i)).toBeVisible();
 
 		// When an out-of-range latitude is entered
-		await page.getByTestId('location-lat-input').fill('200');
-		await page.getByTestId('location-lng-input').fill('2.35');
+		await page.getByTestId('location-input').fill('200,2.35');
 		await page.getByTestId('location-save').click();
 
 		// Then an error about valid ranges is shown
 		await expect(page.getByText(/Enter a valid lat/i)).toBeVisible();
 
 		// When the user enters valid coordinates and saves
-		await page.getByTestId('location-lat-input').fill('48.85');
-		await page.getByTestId('location-lng-input').fill('2.35');
+		await page.getByTestId('location-input').fill('48.85, 2.35');
 		await page.getByTestId('location-save').click();
 		await expect(page.getByText('48.85000, 2.35000')).toBeVisible();
 
-		// And when the user re-enters the editor and blanks both inputs
+		// And when the user re-enters the editor and blanks the input
 		await page.getByTestId('location-edit').click();
-		await page.getByTestId('location-lat-input').fill('');
-		await page.getByTestId('location-lng-input').fill('');
+		await page.getByTestId('location-input').fill('');
 		await page.getByTestId('location-save').click();
 
 		// Then the location is cleared back to the empty state

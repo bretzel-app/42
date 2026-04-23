@@ -12,7 +12,7 @@
 	import LocationCapture from '$lib/components/LocationCapture.svelte';
 	import { loadMembers, activeMembers } from '$lib/stores/members.js';
 	import type { Trip, Expense, CategoryId, ExpenseSplit } from '$lib/types/index.js';
-	import { getTrip, putTrip, getExpensesByTrip } from '$lib/sync/idb.js';
+	import { getTrip, putTrip, getExpensesByTrip, putExpense } from '$lib/sync/idb.js';
 
 	const tripId = $derived($page.params.id!);
 	const expenseId = $derived($page.params.expenseId!);
@@ -38,7 +38,13 @@
 	let originalAmount = $state(0);
 	let splitsResetByAmountChange = $state(false);
 
+	// Guard against the server fetch clobbering in-progress edits: once the form
+	// is populated (from IDB or server, whichever returns first) later responses
+	// update IDB silently but do not overwrite the form fields.
+	let formPopulated = false;
+
 	function populateFromExpense(expense: Expense & { splits?: ExpenseSplit[] }) {
+		if (formPopulated) return;
 		amountInput = formatAmount(expense.amount);
 		originalAmount = expense.amount;
 		currency = expense.currency;
@@ -52,6 +58,7 @@
 		if (expense.splits && expense.splits.length > 0) {
 			splits = expense.splits.map((s) => ({ memberId: s.memberId, amount: s.amount }));
 		}
+		formPopulated = true;
 	}
 
 	// When amount changes in edit mode, reset splits to equal and notify
@@ -108,7 +115,10 @@
 			if (expensesRes.ok) {
 				const allExpenses: (Expense & { splits?: ExpenseSplit[] })[] = await expensesRes.json();
 				const expense = allExpenses.find((e) => e.id === expenseId);
-				if (expense) populateFromExpense(expense);
+				if (expense) {
+					populateFromExpense(expense);
+					try { await putExpense(expense); } catch { /* IDB unavailable */ }
+				}
 			}
 		} catch { /* offline — IDB data stands */ }
 		loading = false;
