@@ -31,9 +31,10 @@ export function sanitizeCoords(
 
 /**
  * Parse a single-field "lat,lng" coordinate string (e.g. "38.141677,13.082805")
- * into two numbers. Tolerates whitespace and accepts either a comma or a
- * semicolon as separator — matches the format users copy from Google Maps,
- * Apple Maps, or OpenStreetMap URLs.
+ * into two numbers. Tolerates whitespace and also accepts a semicolon as a
+ * separator (some map apps export that form). Decimals must use `.` —
+ * `Number()` does not parse comma as a decimal mark, so comma-decimal locales
+ * are not supported.
  *
  * Returns `null` if the input is not a well-formed pair of finite numbers.
  * Range validation is intentionally left to `sanitizeCoords` so both paths
