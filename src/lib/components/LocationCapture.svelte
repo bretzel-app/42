@@ -17,8 +17,8 @@
 	let capturing = $state(false);
 	let errorMsg = $state('');
 	let editing = $state(false);
-	let latInput = $state('');
-	let lngInput = $state('');
+	let latInput = $state<number | null>(null);
+	let lngInput = $state<number | null>(null);
 	// Invalidation token for in-flight geolocation requests: incremented whenever
 	// the user starts manual editing or clears, so late callbacks don't clobber
 	// newer state.
@@ -61,8 +61,8 @@
 	function startEditing() {
 		captureToken++;
 		capturing = false;
-		latInput = latitude !== null ? String(latitude) : '';
-		lngInput = longitude !== null ? String(longitude) : '';
+		latInput = latitude;
+		lngInput = longitude;
 		errorMsg = '';
 		editing = true;
 	}
@@ -73,20 +73,18 @@
 	}
 
 	function saveManual() {
-		const trimmedLat = latInput.trim();
-		const trimmedLng = lngInput.trim();
-		if (trimmedLat === '' && trimmedLng === '') {
+		if (latInput == null && lngInput == null) {
 			latitude = null;
 			longitude = null;
 			errorMsg = '';
 			editing = false;
 			return;
 		}
-		if (trimmedLat === '' || trimmedLng === '') {
+		if (latInput == null || lngInput == null) {
 			errorMsg = 'Enter both latitude and longitude, or leave both blank to clear';
 			return;
 		}
-		const sanitized = sanitizeCoords(trimmedLat, trimmedLng);
+		const sanitized = sanitizeCoords(latInput, lngInput);
 		if (sanitized.latitude === null || sanitized.longitude === null) {
 			errorMsg = 'Enter a valid lat (-90 to 90) and lng (-180 to 180)';
 			return;
