@@ -19,21 +19,28 @@
 	let editing = $state(false);
 	let latInput = $state('');
 	let lngInput = $state('');
+	// Invalidation token for in-flight geolocation requests: incremented whenever
+	// the user starts manual editing or clears, so late callbacks don't clobber
+	// newer state.
+	let captureToken = 0;
 
 	function captureLocation() {
 		if (!navigator.geolocation) {
 			errorMsg = 'Geolocation not supported';
 			return;
 		}
+		const token = ++captureToken;
 		capturing = true;
 		errorMsg = '';
 		navigator.geolocation.getCurrentPosition(
 			(pos) => {
+				if (token !== captureToken) return;
 				latitude = pos.coords.latitude;
 				longitude = pos.coords.longitude;
 				capturing = false;
 			},
 			(err) => {
+				if (token !== captureToken) return;
 				capturing = false;
 				if (err.code === err.PERMISSION_DENIED) errorMsg = 'Location permission denied';
 				else if (err.code === err.POSITION_UNAVAILABLE) errorMsg = 'Location unavailable';
@@ -44,12 +51,16 @@
 	}
 
 	function clearLocation() {
+		captureToken++;
+		capturing = false;
 		latitude = null;
 		longitude = null;
 		errorMsg = '';
 	}
 
 	function startEditing() {
+		captureToken++;
+		capturing = false;
 		latInput = latitude !== null ? String(latitude) : '';
 		lngInput = longitude !== null ? String(longitude) : '';
 		errorMsg = '';
@@ -71,6 +82,10 @@
 			editing = false;
 			return;
 		}
+		if (trimmedLat === '' || trimmedLng === '') {
+			errorMsg = 'Enter both latitude and longitude, or leave both blank to clear';
+			return;
+		}
 		const sanitized = sanitizeCoords(trimmedLat, trimmedLng);
 		if (sanitized.latitude === null || sanitized.longitude === null) {
 			errorMsg = 'Enter a valid lat (-90 to 90) and lng (-180 to 180)';
@@ -88,8 +103,10 @@
 		<div class="flex flex-col gap-2 rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-base)] p-2">
 			<div class="flex gap-2">
 				<input
-					type="text"
-					inputmode="decimal"
+					type="number"
+					step="any"
+					min="-90"
+					max="90"
 					bind:value={latInput}
 					placeholder="Latitude"
 					aria-label="Latitude"
@@ -97,8 +114,10 @@
 					data-testid="location-lat-input"
 				/>
 				<input
-					type="text"
-					inputmode="decimal"
+					type="number"
+					step="any"
+					min="-180"
+					max="180"
 					bind:value={lngInput}
 					placeholder="Longitude"
 					aria-label="Longitude"
