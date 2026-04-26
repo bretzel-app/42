@@ -397,7 +397,12 @@
 				<div class="space-y-3">
 					{#each categoryTotals() as cat}
 						{@const pct = totalSpentCents > 0 ? (cat.total / totalSpentCents) * 100 : 0}
-						<div>
+						<a
+							href="/trips/{trip.id}/expenses?category={cat.id}"
+							class="block rounded-sm transition-colors hover:bg-[var(--bg-base)] -mx-2 px-2 py-1"
+							data-testid="category-row"
+							data-category={cat.id}
+						>
 							<div class="mb-1 flex items-center justify-between text-sm">
 								<span class="flex items-center gap-2">
 									<CategoryIcon categoryId={cat.id} size={16} />
@@ -420,7 +425,7 @@
 									{/if}
 								</p>
 							{/if}
-						</div>
+						</a>
 					{/each}
 				</div>
 			</div>
