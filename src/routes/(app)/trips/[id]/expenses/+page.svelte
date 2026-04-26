@@ -7,18 +7,28 @@
 	import { formatDate } from '$lib/utils/dates.js';
 	import { showToast } from '$lib/stores/toast.js';
 	import CategoryIcon from '$lib/components/CategoryIcon.svelte';
-	import { getCategoryLabel } from '$lib/types/categories.js';
-	import type { Trip, Expense, TripMember } from '$lib/types/index.js';
+	import { getCategoryLabel, CATEGORY_MAP } from '$lib/types/categories.js';
+	import type { Trip, Expense, TripMember, CategoryId } from '$lib/types/index.js';
 	import { getTrip, putTrip } from '$lib/sync/idb.js';
 	import Plus from 'lucide-svelte/icons/plus';
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import ArrowLeft from 'lucide-svelte/icons/arrow-left';
 	import Pencil from 'lucide-svelte/icons/pencil';
 	import MapPin from 'lucide-svelte/icons/map-pin';
+	import X from 'lucide-svelte/icons/x';
 
 	const tripId = $derived($page.params.id!);
 	let trip = $state<Trip | null>(null);
 	let loading = $state(true);
+
+	const categoryFilter = $derived.by<CategoryId | null>(() => {
+		const value = $page.url.searchParams.get('category');
+		return value && CATEGORY_MAP.has(value as CategoryId) ? (value as CategoryId) : null;
+	});
+
+	const filteredExpenses = $derived(
+		categoryFilter ? $activeExpenses.filter((e) => e.categoryId === categoryFilter) : $activeExpenses
+	);
 
 	onMount(async () => {
 		// Load from IDB first for instant offline display
@@ -55,7 +65,7 @@
 	// Group expenses by date
 	const groupedExpenses = $derived(() => {
 		const groups = new Map<string, Expense[]>();
-		for (const expense of $activeExpenses) {
+		for (const expense of filteredExpenses) {
 			const key = formatDate(expense.date);
 			if (!groups.has(key)) groups.set(key, []);
 			groups.get(key)!.push(expense);
@@ -145,6 +155,29 @@
 			<p class="mt-2 text-sm text-[var(--text-muted)]">Add your first expense to start tracking</p>
 		</div>
 	{:else}
+		{#if categoryFilter}
+			<div class="mb-4 flex items-center gap-2" data-testid="category-filter-chip">
+				<span class="text-xs text-[var(--text-muted)]">Filtered by:</span>
+				<span class="inline-flex items-center gap-1.5 rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1 text-xs text-[var(--text)] shadow-[var(--card-shadow)]">
+					<CategoryIcon categoryId={categoryFilter} size={14} />
+					{getCategoryLabel(categoryFilter)}
+					<a
+						href="/trips/{tripId}/expenses"
+						class="ml-0.5 rounded-sm text-[var(--text-muted)] hover:text-[var(--destructive)]"
+						aria-label="Clear category filter"
+						data-testid="clear-category-filter"
+					>
+						<X size={12} />
+					</a>
+				</span>
+			</div>
+		{/if}
+		{#if filteredExpenses.length === 0}
+			<div class="flex flex-col items-center justify-center py-16">
+				<p class="font-['Press_Start_2P'] text-sm text-[var(--text-muted)]">No matches</p>
+				<p class="mt-2 text-sm text-[var(--text-muted)]">No expenses in this category yet</p>
+			</div>
+		{:else}
 		<div class="space-y-6">
 			{#each groupedExpenses() as [dateStr, dayExpenses]}
 				{@const dayTotal = dayExpenses.reduce((s, e) => s + convertToHomeCurrency(e.amount, e.exchangeRate), 0)}
@@ -210,5 +243,6 @@
 				</div>
 			{/each}
 		</div>
+		{/if}
 	{/if}
 </div>
