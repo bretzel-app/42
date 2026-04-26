@@ -97,6 +97,7 @@
 		(duration > 0 ? preTripCents / duration : 0) + (elapsed > 0 ? onTripCents / elapsed : 0)
 	);
 	const avgPerPerson = $derived(trip && trip.numberOfPeople > 0 ? totalSpentCents / trip.numberOfPeople : totalSpentCents);
+	const avgPerDayPerPerson = $derived(trip && trip.numberOfPeople > 0 ? avgPerDay / trip.numberOfPeople : avgPerDay);
 	// Days until trip starts (for upcoming) or days left (for ongoing)
 	const daysUntilStart = $derived(() => {
 		if (!trip) return 0;
@@ -320,6 +321,9 @@
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
 				<p class="text-xs text-[var(--text-muted)]">Avg / person</p>
 				<p class="mt-1 text-lg font-bold text-[var(--text)]">{formatCents(Math.round(avgPerPerson), trip.homeCurrency)}</p>
+				{#if trip.numberOfPeople > 1 && avgPerDayPerPerson > 0}
+					<p class="mt-0.5 text-xs text-[var(--text-muted)]">{formatCents(Math.round(avgPerDayPerPerson), trip.homeCurrency)}/day</p>
+				{/if}
 			</div>
 			<div class="rounded-sm border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 shadow-[var(--card-shadow)]">
 				<p class="text-xs text-[var(--text-muted)]">Projected total</p>
