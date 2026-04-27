@@ -41,6 +41,29 @@ describe('formatTripDuration', () => {
 		// 10 days
 		expect(formatTripDuration(new Date('2025-03-10'), new Date('2025-03-19'))).toBe('10 days');
 	});
+
+	// Regression: a millisecond-based diff over-counts on the DST fall-back
+	// day (25 hours), turning a 3-day trip into "4 days". Calendar-day math
+	// keeps this stable.
+	describe('across the DST fall-back boundary', () => {
+		const originalTZ = process.env.TZ;
+
+		beforeAll(() => {
+			process.env.TZ = 'America/New_York';
+		});
+
+		afterAll(() => {
+			if (originalTZ === undefined) delete process.env.TZ;
+			else process.env.TZ = originalTZ;
+		});
+
+		it('counts inclusive calendar days, not 24h chunks', () => {
+			// EDT → EST falls back at 02:00 on Nov 2, 2025.
+			const start = new Date(2025, 10, 1);
+			const end = new Date(2025, 10, 3);
+			expect(formatTripDuration(start, end)).toBe('3 days');
+		});
+	});
 });
 
 describe('toDateInput', () => {
