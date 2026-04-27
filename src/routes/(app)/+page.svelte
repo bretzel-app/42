@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { activeTrips, tripsLoaded } from '$lib/stores/trips.js';
 	import { formatCents } from '$lib/utils/currency.js';
-	import { formatDateRange } from '$lib/utils/dates.js';
+	import { formatDateRange, formatTripDuration } from '$lib/utils/dates.js';
 	import Plus from 'lucide-svelte/icons/plus';
 	import MapPin from 'lucide-svelte/icons/map-pin';
 	import Calendar from 'lucide-svelte/icons/calendar';
@@ -65,6 +65,7 @@
 					<div class="mt-1 flex items-center gap-1 text-xs text-[var(--text-muted)]">
 						<Calendar size={12} />
 						{formatDateRange(trip.startDate, trip.endDate)}
+						<span class="text-[var(--text-muted)]">· {formatTripDuration(trip.startDate, trip.endDate)}</span>
 					</div>
 
 					{#if trip.totalBudget}

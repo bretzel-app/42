@@ -21,6 +21,19 @@ export function elapsedDays(startDate: Date, endDate: Date): number {
 }
 
 /**
+ * Human-friendly trip duration: "1 day", "5 days", "1 week", "3 weeks".
+ * Uses weeks only when the day count divides evenly by 7.
+ */
+export function formatTripDuration(startDate: Date, endDate: Date): string {
+	const days = tripDurationDays(startDate, endDate);
+	if (days >= 7 && days % 7 === 0) {
+		const weeks = days / 7;
+		return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+	}
+	return `${days} ${days === 1 ? 'day' : 'days'}`;
+}
+
+/**
  * Format a date for display (e.g., "Mar 10, 2026")
  */
 export function formatDate(date: Date): string {
