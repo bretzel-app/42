@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { tripDurationDays, toDateInput, fromDateInput } from './dates.js';
+import { tripDurationDays, toDateInput, fromDateInput, formatTripDuration } from './dates.js';
 
 describe('tripDurationDays', () => {
 	it('returns inclusive day count', () => {
@@ -17,6 +17,29 @@ describe('tripDurationDays', () => {
 		const start = new Date('2025-03-15');
 		const end = new Date('2025-03-10');
 		expect(tripDurationDays(start, end)).toBe(1);
+	});
+});
+
+describe('formatTripDuration', () => {
+	it('formats single day as "1 day"', () => {
+		const date = new Date('2025-03-10');
+		expect(formatTripDuration(date, date)).toBe('1 day');
+	});
+
+	it('formats sub-week ranges in days', () => {
+		expect(formatTripDuration(new Date('2025-03-10'), new Date('2025-03-12'))).toBe('3 days');
+	});
+
+	it('formats exact weeks as weeks', () => {
+		// Mar 10–16 is 7 days inclusive
+		expect(formatTripDuration(new Date('2025-03-10'), new Date('2025-03-16'))).toBe('1 week');
+		// Mar 10–23 is 14 days inclusive
+		expect(formatTripDuration(new Date('2025-03-10'), new Date('2025-03-23'))).toBe('2 weeks');
+	});
+
+	it('falls back to days when not a whole number of weeks', () => {
+		// 10 days
+		expect(formatTripDuration(new Date('2025-03-10'), new Date('2025-03-19'))).toBe('10 days');
 	});
 });
 
