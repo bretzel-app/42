@@ -55,4 +55,34 @@ test.describe('Expense management', () => {
 		await expect(page.getByTestId('expense-row')).toBeVisible();
 		await expect(page.getByText('Metro ticket')).toBeVisible();
 	});
+
+	test('Scenario: Clicking a dashboard category opens the expenses list filtered to that category', async ({ authenticatedPage: page }) => {
+		// Given a trip with expenses across multiple categories
+		await createTrip(page, { name: 'Filter Test' });
+		await addExpense(page, { amount: '40', category: 'food', note: 'Ramen' });
+		await addExpense(page, { amount: '120', category: 'transport', note: 'Train ticket' });
+
+		// When the user navigates to the dashboard and clicks the food category row
+		await page.getByLabel('Back to dashboard').click();
+		await page.locator('[data-testid="category-row"][data-category="food"]').click();
+
+		// Then the URL carries the category filter
+		await expect(page).toHaveURL(/\/expenses\?category=food$/);
+
+		// And the filter chip displays the selected category
+		await expect(page.getByTestId('category-filter-chip')).toContainText('Food & Drinks');
+
+		// And only food expenses are shown
+		await expect(page.getByText('Ramen')).toBeVisible();
+		await expect(page.getByText('Train ticket')).toHaveCount(0);
+
+		// When the user clears the filter
+		await page.getByTestId('clear-category-filter').click();
+
+		// Then both expenses are shown again and the chip is gone
+		await expect(page).toHaveURL(/\/expenses$/);
+		await expect(page.getByTestId('category-filter-chip')).toHaveCount(0);
+		await expect(page.getByText('Ramen')).toBeVisible();
+		await expect(page.getByText('Train ticket')).toBeVisible();
+	});
 });
