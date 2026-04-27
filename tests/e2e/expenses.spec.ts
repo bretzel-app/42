@@ -63,13 +63,13 @@ test.describe('Expense management', () => {
 		await addExpense(page, { amount: '120', category: 'transport', note: 'Train ticket' });
 
 		// When the user navigates to the dashboard and clicks the food category row
-		await page.getByLabel('Back to dashboard').click();
-		await page.locator('[data-testid="category-row"][data-category="food"]').click();
+		await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
+		const foodRow = page.locator('[data-testid="category-row"][data-category="food"]');
+		await expect(foodRow).toBeVisible();
+		await foodRow.click();
 
-		// Then the URL carries the category filter
+		// Then the URL carries the category filter and the chip displays the selected category
 		await expect(page).toHaveURL(/\/expenses\?category=food$/);
-
-		// And the filter chip displays the selected category
 		await expect(page.getByTestId('category-filter-chip')).toContainText('Food & Drinks');
 
 		// And only food expenses are shown
