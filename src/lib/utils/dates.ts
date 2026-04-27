@@ -1,23 +1,29 @@
 /**
- * Get trip duration in days (inclusive).
+ * Get trip duration in days (inclusive). Counts local calendar days so DST
+ * transitions (23h or 25h days) don't skew the result.
  */
 export function tripDurationDays(startDate: Date, endDate: Date): number {
 	const start = new Date(startDate);
 	const end = new Date(endDate);
-	const diffMs = end.getTime() - start.getTime();
-	return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)) + 1);
+	const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+	const endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+	const diffDays = Math.round((endUTC - startUTC) / (1000 * 60 * 60 * 24));
+	return Math.max(1, diffDays + 1);
 }
 
 /**
- * Get number of elapsed days from start date to today (or end date if trip is over).
+ * Get number of elapsed days from start date to today (or end date if trip is
+ * over). Calendar-day diff to stay correct across DST transitions.
  */
 export function elapsedDays(startDate: Date, endDate: Date): number {
 	const start = new Date(startDate);
 	const end = new Date(endDate);
 	const now = new Date();
 	const effective = now < end ? now : end;
-	const diffMs = effective.getTime() - start.getTime();
-	return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)) + 1);
+	const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+	const effectiveUTC = Date.UTC(effective.getFullYear(), effective.getMonth(), effective.getDate());
+	const diffDays = Math.round((effectiveUTC - startUTC) / (1000 * 60 * 60 * 24));
+	return Math.max(1, diffDays + 1);
 }
 
 /**
