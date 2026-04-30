@@ -170,6 +170,7 @@
 			}
 		}
 
+		const people = trip && trip.numberOfPeople > 0 ? trip.numberOfPeople : 1;
 		return CATEGORIES
 			.map((cat) => {
 				const total = totals.get(cat.id) || 0;
@@ -179,7 +180,9 @@
 				const preTripDaily = duration > 0 ? preTrip / duration : 0;
 				const onTripDaily = elapsed > 0 ? onTrip / elapsed : 0;
 				const avgPerDay = preTripDaily + onTripDaily;
-				return { ...cat, total, avgPerDay };
+				const avgPerPerson = total / people;
+				const avgPerDayPerPerson = avgPerDay / people;
+				return { ...cat, total, avgPerDay, avgPerPerson, avgPerDayPerPerson };
 			})
 			.filter((c) => c.total > 0)
 			.sort((a, b) => b.total - a.total);
@@ -423,6 +426,10 @@
 									{formatCents(Math.round(cat.avgPerDay), trip.homeCurrency)}/day
 									{#if cat.id === 'accommodation'}
 										(per night)
+									{/if}
+									{#if trip.numberOfPeople > 1}
+										· {formatCents(Math.round(cat.avgPerPerson), trip.homeCurrency)}/person
+										· {formatCents(Math.round(cat.avgPerDayPerPerson), trip.homeCurrency)}/person/day
 									{/if}
 								</p>
 							{/if}
