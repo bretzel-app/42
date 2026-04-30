@@ -145,8 +145,9 @@
 	});
 
 	const budgetPercent = $derived(
-		trip?.totalBudget ? Math.min(100, (totalSpentCents / trip.totalBudget) * 100) : 0
+		trip?.totalBudget ? (totalSpentCents / trip.totalBudget) * 100 : 0
 	);
+	const budgetBarWidth = $derived(Math.min(100, budgetPercent));
 	const budgetColor = $derived(
 		budgetPercent > 90 ? 'var(--destructive)' : budgetPercent > 70 ? 'var(--primary)' : 'var(--success-text)'
 	);
@@ -290,7 +291,7 @@
 				<div class="h-4 overflow-hidden rounded-sm bg-[var(--border-subtle)]">
 					<div
 						class="h-full transition-all"
-						style="width: {budgetPercent}%; background-color: {budgetColor}"
+						style="width: {budgetBarWidth}%; background-color: {budgetColor}"
 					></div>
 				</div>
 				<div class="mt-1 flex items-center justify-between text-xs text-[var(--text-muted)]">
